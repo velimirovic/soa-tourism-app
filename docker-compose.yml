@@ -32,6 +32,9 @@ services:
     volumes:
       - stakeholders-db-data:/var/lib/postgresql/data
   
+  tour-service:
+    build:
+      context: ./tour-service
   blog-service:
     build:
       context: ./blog-service
@@ -40,6 +43,29 @@ services:
     networks:
       - application
     ports:
+      - "8083:8080"
+    environment:
+      DATABASE_HOST: tour-db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: super
+      DATABASE_NAME: tours
+    depends_on:
+      - tour-db
+
+  tour-db:
+    image: postgres:16
+    restart: always
+    networks:
+      - application
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: super
+      POSTGRES_DB: tours
+    ports:
+      - "5434:5432"
+    volumes:
+      - tour-db-data:/var/lib/postgresql/data
       - "3001:3001"
     environment:
       PORT: 3001
@@ -74,4 +100,5 @@ networks:
 
 volumes:
   stakeholders-db-data:
+  tour-db-data:
   blog-db-data:
