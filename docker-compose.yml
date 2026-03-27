@@ -1,0 +1,40 @@
+services:
+
+  stakeholders-service:
+    build:
+      context: ./stakeholders-service/StakeholdersService
+      dockerfile: Dockerfile
+    restart: on-failure
+    networks:
+      - application
+    ports:
+      - "8081:80"
+    environment:
+      DATABASE_HOST: stakeholders-db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: super
+      DATABASE_NAME: stakeholders
+    depends_on:
+      - stakeholders-db
+
+  stakeholders-db:
+    image: postgres:16
+    restart: always
+    networks:
+      - application
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: super
+      POSTGRES_DB: stakeholders
+    ports:
+      - "5433:5432"
+    volumes:
+      - stakeholders-db-data:/var/lib/postgresql/data
+
+networks:
+  application:
+    driver: bridge
+
+volumes:
+  stakeholders-db-data:
