@@ -1,0 +1,21 @@
+# .NET
+**/bin/
+**/obj/
+**/*.user
+
+# Node.js
+**/node_modules/
+**/.env
+
+# Java
+**/target/
+**/*.class
+
+# Go
+**/vendor/
+
+# Angular
+**/dist/
+
+# Docker
+**/.dockerignore
