@@ -32,6 +32,32 @@ services:
     volumes:
       - stakeholders-db-data:/var/lib/postgresql/data
   
+  blog-service:
+    build:
+      context: ./blog-service
+      dockerfile: Dockerfile
+    restart: on-failure
+    networks:
+      - application
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+      MONGO_URI: mongodb://blog-db:27017/blog
+      JWT_SECRET: your_jwt_secret_here
+    depends_on:
+      - blog-db
+
+  blog-db:
+    image: mongo:7
+    restart: always
+    networks:
+      - application
+    ports:
+      - "27017:27017"
+    volumes:
+      - blog-db-data:/data/db
+
   tourism-frontend:
     build:
       context: ./tourism-frontend/tourism-frontend
@@ -41,10 +67,11 @@ services:
       - application
     ports:
       - "4200:80"
-      
+
 networks:
   application:
     driver: bridge
 
 volumes:
   stakeholders-db-data:
+  blog-db-data:
