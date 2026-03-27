@@ -35,6 +35,9 @@ services:
   tour-service:
     build:
       context: ./tour-service
+  blog-service:
+    build:
+      context: ./blog-service
       dockerfile: Dockerfile
     restart: on-failure
     networks:
@@ -63,6 +66,23 @@ services:
       - "5434:5432"
     volumes:
       - tour-db-data:/var/lib/postgresql/data
+      - "3001:3001"
+    environment:
+      PORT: 3001
+      MONGO_URI: mongodb://blog-db:27017/blog
+      JWT_SECRET: your_jwt_secret_here
+    depends_on:
+      - blog-db
+
+  blog-db:
+    image: mongo:7
+    restart: always
+    networks:
+      - application
+    ports:
+      - "27017:27017"
+    volumes:
+      - blog-db-data:/data/db
 
   tourism-frontend:
     build:
@@ -81,3 +101,4 @@ networks:
 volumes:
   stakeholders-db-data:
   tour-db-data:
+  blog-db-data:
