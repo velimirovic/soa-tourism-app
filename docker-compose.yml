@@ -32,6 +32,38 @@ services:
     volumes:
       - stakeholders-db-data:/var/lib/postgresql/data
   
+  tour-service:
+    build:
+      context: ./tour-service
+      dockerfile: Dockerfile
+    restart: on-failure
+    networks:
+      - application
+    ports:
+      - "8083:8080"
+    environment:
+      DATABASE_HOST: tour-db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: super
+      DATABASE_NAME: tours
+    depends_on:
+      - tour-db
+
+  tour-db:
+    image: postgres:16
+    restart: always
+    networks:
+      - application
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: super
+      POSTGRES_DB: tours
+    ports:
+      - "5434:5432"
+    volumes:
+      - tour-db-data:/var/lib/postgresql/data
+
   tourism-frontend:
     build:
       context: ./tourism-frontend/tourism-frontend
@@ -41,10 +73,11 @@ services:
       - application
     ports:
       - "4200:80"
-      
+
 networks:
   application:
     driver: bridge
 
 volumes:
   stakeholders-db-data:
+  tour-db-data:
