@@ -35,6 +35,13 @@ services:
   auth-service:
     build:
       context: ./auth-service/AuthService
+  
+  tour-service:
+    build:
+      context: ./tour-service
+  blog-service:
+    build:
+      context: ./blog-service
       dockerfile: Dockerfile
     restart: on-failure
     networks:
@@ -53,6 +60,17 @@ services:
       - auth-db
 
   auth-db:
+      - "8083:8080"
+    environment:
+      DATABASE_HOST: tour-db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: super
+      DATABASE_NAME: tours
+    depends_on:
+      - tour-db
+
+  tour-db:
     image: postgres:16
     restart: always
     networks:
@@ -65,6 +83,28 @@ services:
       - "5434:5432"
     volumes:
       - auth-db-data:/var/lib/postgresql/data
+      POSTGRES_DB: tours
+    ports:
+      - "5434:5432"
+    volumes:
+      - tour-db-data:/var/lib/postgresql/data
+      - "3001:3001"
+    environment:
+      PORT: 3001
+      MONGO_URI: mongodb://blog-db:27017/blog
+      JWT_SECRET: your_jwt_secret_here
+    depends_on:
+      - blog-db
+
+  blog-db:
+    image: mongo:7
+    restart: always
+    networks:
+      - application
+    ports:
+      - "27017:27017"
+    volumes:
+      - blog-db-data:/data/db
 
   tourism-frontend:
     build:
@@ -83,3 +123,5 @@ networks:
 volumes:
   stakeholders-db-data:
   auth-db-data:
+  tour-db-data:
+  blog-db-data:
