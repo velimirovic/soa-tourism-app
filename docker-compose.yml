@@ -31,14 +31,44 @@ services:
       - "5433:5432"
     volumes:
       - stakeholders-db-data:/var/lib/postgresql/data
-  
+
+  auth-service:
+    build:
+      context: ./auth-service/AuthService
+      dockerfile: Dockerfile
+    restart: on-failure
+    networks:
+      - application
+    ports:
+      - "8082:80"
+    environment:
+      DATABASE_HOST: auth-db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: super
+      DATABASE_NAME: auth
+      JWT_KEY: change-me-in-production-min32chars!!
+      JWT_ISSUER: AuthService
+    depends_on:
+      - auth-db
+
+  auth-db:
+    image: postgres:16
+    restart: always
+    networks:
+      - application
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: super
+      POSTGRES_DB: auth
+    ports:
+      - "5435:5432"
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data
+
   tour-service:
     build:
       context: ./tour-service
-  blog-service:
-    build:
-      context: ./blog-service
-      dockerfile: Dockerfile
     restart: on-failure
     networks:
       - application
@@ -66,6 +96,15 @@ services:
       - "5434:5432"
     volumes:
       - tour-db-data:/var/lib/postgresql/data
+
+  blog-service:
+    build:
+      context: ./blog-service
+      dockerfile: Dockerfile
+    restart: on-failure
+    networks:
+      - application
+    ports:
       - "3001:3001"
     environment:
       PORT: 3001
@@ -100,5 +139,6 @@ networks:
 
 volumes:
   stakeholders-db-data:
+  auth-db-data:
   tour-db-data:
   blog-db-data:
