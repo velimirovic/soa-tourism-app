@@ -1,5 +1,28 @@
 services:
 
+  # ── API Gateway (Go) ────────────────────────────────────────────
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    restart: on-failure
+    networks:
+      - application
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: 8080
+      JWT_KEY: change-me-in-production-min32chars!!
+      AUTH_SERVICE_URL: http://auth-service:80
+      BLOG_SERVICE_URL: http://blog-service:3001
+      TOUR_SERVICE_URL: http://tour-service:8080
+      STAKEHOLDERS_SERVICE_URL: http://stakeholders-service:80
+    depends_on:
+      - auth-service
+      - blog-service
+      - tour-service
+      - stakeholders-service
+
   stakeholders-service:
     build:
       context: ./stakeholders-service/StakeholdersService

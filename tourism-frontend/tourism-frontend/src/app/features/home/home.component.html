@@ -1,0 +1,22 @@
+<!-- Prazna home stranica — sadržaj dolazi u kasnijim iteracijama -->
+<div class="home-placeholder">
+  <div class="home-placeholder__icon">
+    <span class="material-icons">travel_explore</span>
+  </div>
+  <h1 class="home-placeholder__title">Welcome to TourFlo</h1>
+  <p class="home-placeholder__text">
+    Discover amazing tours and expert guides.<br/>
+    Content coming soon.
+  </p>
+
+  <div class="home-placeholder__actions" *ngIf="!isLoggedIn">
+    <a routerLink="/register" class="ph-btn ph-btn--primary">
+      <span class="material-icons">person_add</span>
+      Get Started
+    </a>
+    <a routerLink="/login" class="ph-btn ph-btn--ghost">
+      <span class="material-icons">login</span>
+      Sign In
+    </a>
+  </div>
+</div>
