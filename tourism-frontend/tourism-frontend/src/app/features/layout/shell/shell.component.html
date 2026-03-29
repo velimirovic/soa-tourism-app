@@ -1,0 +1,39 @@
+<div class="shell">
+  <app-sidebar></app-sidebar>
+
+  <main class="shell__content">
+
+    <!-- Top bar -->
+    <header class="topbar">
+      <div class="topbar__search">
+        <span class="material-icons topbar__search-icon">search</span>
+        <input type="text" placeholder="Search tours, guides, or bookings" class="topbar__search-input" />
+      </div>
+
+      <div class="topbar__actions">
+        <!-- Kad nije ulogovan: Login + Register -->
+        <ng-container *ngIf="!authService.isLoggedIn()">
+          <a routerLink="/login"    class="topbar__btn topbar__btn--ghost">Login</a>
+          <a routerLink="/register" class="topbar__btn topbar__btn--primary">Register</a>
+        </ng-container>
+
+        <!-- Kad jeste ulogovan -->
+        <ng-container *ngIf="authService.isLoggedIn()">
+          <span class="topbar__user">
+            <span class="material-icons">account_circle</span>
+            {{ authService.getUser()?.username }}
+          </span>
+          <button class="topbar__btn topbar__btn--icon">
+            <span class="material-icons">mail_outline</span>
+          </button>
+        </ng-container>
+      </div>
+    </header>
+
+    <!-- Page content -->
+    <section class="shell__page">
+      <router-outlet></router-outlet>
+    </section>
+
+  </main>
+</div>

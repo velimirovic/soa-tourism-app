@@ -1,0 +1,149 @@
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  width: 110px;
+  min-height: 100vh;
+  background: #ede9f8;
+  padding: 16px 8px 12px;
+  border-right: 1px solid #ddd4f5;
+
+  // ── Logo ────────────────────────────────────────────────────
+  &__logo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding-bottom: 20px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid #ddd4f5;
+
+    &-icon {
+      width: 42px;
+      height: 42px;
+      background: #1a1a2e;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      .material-icons {
+        color: #fff;
+        font-size: 24px;
+      }
+    }
+
+    &-text {
+      font-size: 12px;
+      font-weight: 800;
+      color: #1a1a2e;
+      letter-spacing: 0.2px;
+    }
+  }
+
+  // ── Nav ─────────────────────────────────────────────────────
+  &__nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    padding-top: 8px;
+  }
+
+  &__nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 10px 6px;
+    border-radius: 14px;
+    text-decoration: none;
+    color: #7a7a9a;
+    transition: background 0.18s, color 0.18s;
+    cursor: pointer;
+
+    &:hover {
+      background: #e2d0fa;
+      color: #7c3aed;
+    }
+
+    &--active {
+      background: #c084fc;
+      color: #fff;
+
+      .sidebar__nav-label {
+        font-weight: 700;
+      }
+
+      &:hover {
+        background: #b166f5;
+        color: #fff;
+      }
+    }
+  }
+
+  &__nav-icon { font-size: 22px; }
+
+  &__nav-label {
+    font-size: 10px;
+    font-weight: 500;
+    text-align: center;
+    line-height: 1.2;
+  }
+
+  // ── Footer ──────────────────────────────────────────────────
+  &__footer {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-top: 10px;
+    border-top: 1px solid #ddd4f5;
+  }
+
+  &__footer-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    width: 100%;
+    padding: 9px 6px;
+    border: none;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.18s, color 0.18s;
+    text-align: center;
+
+    .material-icons { font-size: 20px; }
+
+    &--login {
+      background: #c084fc;
+      color: #fff;
+
+      &:hover { background: #b166f5; }
+    }
+
+    &--register {
+      background: transparent;
+      color: #7a7a9a;
+      border: 1.5px solid #ddd4f5;
+
+      &:hover {
+        background: #e2d0fa;
+        color: #7c3aed;
+        border-color: #c084fc;
+      }
+    }
+
+    &--logout {
+      background: transparent;
+      color: #7a7a9a;
+
+      &:hover {
+        background: #fde8e8;
+        color: #dc2626;
+      }
+    }
+  }
+}

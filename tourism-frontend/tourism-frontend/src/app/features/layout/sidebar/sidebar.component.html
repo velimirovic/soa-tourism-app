@@ -1,0 +1,48 @@
+<aside class="sidebar">
+
+  <!-- Logo -->
+  <div class="sidebar__logo">
+    <div class="sidebar__logo-icon">
+      <span class="material-icons">explore</span>
+    </div>
+    <span class="sidebar__logo-text">TourFlo</span>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="sidebar__nav">
+    <a
+      *ngFor="let item of navItems"
+      [routerLink]="item.route"
+      routerLinkActive="sidebar__nav-item--active"
+      [routerLinkActiveOptions]="{ exact: item.exact }"
+      class="sidebar__nav-item"
+    >
+      <span class="material-icons sidebar__nav-icon">{{ item.icon }}</span>
+      <span class="sidebar__nav-label">{{ item.label }}</span>
+    </a>
+  </nav>
+
+  <!-- Footer: Login/Register ili Logout -->
+  <div class="sidebar__footer">
+
+    <ng-container *ngIf="!isLoggedIn; else loggedInFooter">
+      <a routerLink="/login" class="sidebar__footer-btn sidebar__footer-btn--login">
+        <span class="material-icons">login</span>
+        <span>Login</span>
+      </a>
+      <a routerLink="/register" class="sidebar__footer-btn sidebar__footer-btn--register">
+        <span class="material-icons">person_add</span>
+        <span>Register</span>
+      </a>
+    </ng-container>
+
+    <ng-template #loggedInFooter>
+      <button class="sidebar__footer-btn sidebar__footer-btn--logout" (click)="logout()">
+        <span class="material-icons">logout</span>
+        <span>Logout</span>
+      </button>
+    </ng-template>
+
+  </div>
+
+</aside>
