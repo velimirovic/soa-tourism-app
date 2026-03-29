@@ -39,18 +39,59 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
-// ── OpenAPI / other services ──────────────────────────────────────────────────
+// ── CORS ──────────────────────────────────────────────────────────────────────
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader());
+});
+
+// ── OpenAPI / Controllers ─────────────────────────────────────────────────────
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
 
 // ─────────────────────────────────────────────────────────────────────────────
 var app = builder.Build();
 
-// Auto-apply migrations on startup
+// Ensure schema exists — radi i na novoj i na postojecoj bazi
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
-    db.Database.Migrate();
+
+    // Ceka da Postgres bude spreman (retry loop za Docker startup)
+    var retries = 10;
+    while (retries-- > 0)
+    {
+        try
+        {
+            // Kreira tabele direktno putem SQL-a — idempotentno (IF NOT EXISTS)
+            db.Database.ExecuteSqlRaw(@"
+                CREATE TABLE IF NOT EXISTS ""Users"" (
+                    ""Id""           bigserial                   PRIMARY KEY,
+                    ""Username""     character varying           NOT NULL,
+                    ""Email""        character varying           NOT NULL,
+                    ""PasswordHash"" character varying           NOT NULL,
+                    ""Role""         character varying           NOT NULL,
+                    ""IsBlocked""    boolean                     NOT NULL DEFAULT false,
+                    ""CreatedAt""    timestamp with time zone    NOT NULL DEFAULT now()
+                );
+
+                CREATE UNIQUE INDEX IF NOT EXISTS ""IX_Users_Username""
+                    ON ""Users"" (""Username"");
+
+                CREATE UNIQUE INDEX IF NOT EXISTS ""IX_Users_Email""
+                    ON ""Users"" (""Email"");
+            ");
+            break;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Auth] DB not ready, retrying... ({ex.Message})");
+            Thread.Sleep(2000);
+        }
+    }
 }
 
 if (app.Environment.IsDevelopment())
@@ -58,6 +99,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
