@@ -1,11 +1,9 @@
-import { Component, signal } from '@angular/core';
+import { Component } from '@angular/core';
 
 @Component({
   selector: 'app-root',
-  templateUrl: './app.html',
   standalone: false,
-  styleUrl: './app.scss'
+  template: '<router-outlet></router-outlet>',
+  styles: [':host { display: block; height: 100%; }']
 })
-export class App {
-  protected readonly title = signal('tourism-frontend');
-}
+export class App {}
