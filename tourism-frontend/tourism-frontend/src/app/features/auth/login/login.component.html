@@ -1,0 +1,114 @@
+<div class="login-page">
+
+  <!-- ── Left panel (purple) ───────────────────── -->
+  <div class="login-page__left">
+    <div class="blob blob--large"></div>
+    <div class="blob blob--small"></div>
+
+    <div class="login-page__left-content">
+      <div class="login-page__logo">
+        <div class="login-page__logo-icon">
+          <span class="material-icons">explore</span>
+        </div>
+        <h1 class="login-page__logo-text">TourFlo</h1>
+      </div>
+
+      <h2 class="login-page__headline">Discover the<br/>world with us.</h2>
+      <p class="login-page__sub">
+        Connect with expert guides, book unique tours<br/>
+        and create unforgettable memories.
+      </p>
+    </div>
+  </div>
+
+  <!-- ── Right panel (form) ────────────────────── -->
+  <div class="login-page__right">
+    <div class="login-card">
+
+      <!-- Back to Home -->
+      <a routerLink="/home" class="back-link">
+        <span class="material-icons">arrow_back</span>
+        Back to Home
+      </a>
+
+      <h2 class="login-card__title">Log In</h2>
+      <p class="login-card__subtitle">
+        Sign in to your <span class="login-card__brand">TourFlo</span> account
+      </p>
+
+      <!-- Error banner -->
+      <div *ngIf="errorMsg" class="login-card__error">
+        <span class="material-icons">error_outline</span>
+        {{ errorMsg }}
+      </div>
+
+      <form #loginForm="ngForm" (ngSubmit)="onSubmit(loginForm)" novalidate>
+
+        <!-- Username -->
+        <div class="form-group">
+          <label class="form-label">Username</label>
+          <input
+            name="username"
+            [(ngModel)]="model.username"
+            required
+            #usernameCtrl="ngModel"
+            type="text"
+            class="form-input"
+            [class.form-input--error]="usernameCtrl.invalid && usernameCtrl.touched"
+            placeholder="Enter your username"
+          />
+          <span *ngIf="usernameCtrl.invalid && usernameCtrl.touched" class="form-error">
+            Username is required.
+          </span>
+        </div>
+
+        <!-- Password -->
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <div class="form-input-wrap">
+            <input
+              name="password"
+              [(ngModel)]="model.password"
+              required
+              #passwordCtrl="ngModel"
+              [type]="showPassword ? 'text' : 'password'"
+              class="form-input form-input--with-icon"
+              [class.form-input--error]="passwordCtrl.invalid && passwordCtrl.touched"
+              placeholder="Enter your password"
+            />
+            <button
+              type="button"
+              class="form-eye-btn"
+              (click)="showPassword = !showPassword"
+              tabindex="-1"
+            >
+              <span class="material-icons">
+                {{ showPassword ? 'visibility_off' : 'visibility' }}
+              </span>
+            </button>
+          </div>
+          <span *ngIf="passwordCtrl.invalid && passwordCtrl.touched" class="form-error">
+            Password is required.
+          </span>
+        </div>
+
+        <!-- Submit -->
+        <button
+          type="submit"
+          class="login-card__submit"
+          [disabled]="loading"
+        >
+          <span *ngIf="!loading">Log in</span>
+          <span *ngIf="loading" class="spinner"></span>
+        </button>
+
+      </form>
+
+      <p class="login-card__register">
+        Don't have an account?
+        <a routerLink="/register" class="login-card__link">Sign up</a>
+      </p>
+    </div>
+  </div>
+
+</div>

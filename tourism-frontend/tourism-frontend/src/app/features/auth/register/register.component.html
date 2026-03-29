@@ -1,0 +1,182 @@
+<div class="register-page">
+
+  <!-- ── Left panel ───────────────────────────── -->
+  <div class="register-page__left">
+    <div class="blob blob--large"></div>
+    <div class="blob blob--medium"></div>
+    <div class="blob blob--small"></div>
+
+    <div class="register-page__left-content">
+      <div class="register-page__logo">
+        <div class="register-page__logo-icon">
+          <span class="material-icons">explore</span>
+        </div>
+        <h1 class="register-page__logo-text">TourFlo</h1>
+      </div>
+
+      <h2 class="register-page__headline">Start your<br/>journey today.</h2>
+      <p class="register-page__sub">
+        Join thousands of travelers and guides.<br/>
+        Your next adventure is one click away.
+      </p>
+
+      <!-- Role cards -->
+      <div class="role-preview">
+        <div class="role-preview__card">
+          <span class="material-icons">hiking</span>
+          <span>Tourist</span>
+        </div>
+        <div class="role-preview__card">
+          <span class="material-icons">record_voice_over</span>
+          <span>Guide</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Right panel (form) ────────────────────── -->
+  <div class="register-page__right">
+    <div class="register-card">
+
+      <!-- Back to Home -->
+      <a routerLink="/home" class="back-link">
+        <span class="material-icons">arrow_back</span>
+        Back to Home
+      </a>
+
+      <h2 class="register-card__title">Create Account</h2>
+      <p class="register-card__subtitle">
+        Already have an account?
+        <a routerLink="/login" class="register-card__link">Sign in</a>
+      </p>
+
+      <!-- Error banner -->
+      <div *ngIf="errorMsg" class="register-card__error">
+        <span class="material-icons">error_outline</span>
+        {{ errorMsg }}
+      </div>
+
+      <form #regForm="ngForm" (ngSubmit)="onSubmit(regForm)" novalidate>
+
+        <!-- Username -->
+        <div class="form-group">
+          <label class="form-label">Username</label>
+          <input
+            name="username"
+            [(ngModel)]="model.username"
+            required
+            minlength="3"
+            #usernameCtrl="ngModel"
+            type="text"
+            class="form-input"
+            [class.form-input--error]="usernameCtrl.invalid && usernameCtrl.touched"
+            placeholder="Choose a username"
+          />
+          <span *ngIf="usernameCtrl.invalid && usernameCtrl.touched" class="form-error">
+            <ng-container *ngIf="usernameCtrl.errors?.['required']">Username is required.</ng-container>
+            <ng-container *ngIf="usernameCtrl.errors?.['minlength']">Minimum 3 characters.</ng-container>
+          </span>
+        </div>
+
+        <!-- Email -->
+        <div class="form-group">
+          <label class="form-label">Email address</label>
+          <input
+            name="email"
+            [(ngModel)]="model.email"
+            required
+            email
+            #emailCtrl="ngModel"
+            type="email"
+            class="form-input"
+            [class.form-input--error]="emailCtrl.invalid && emailCtrl.touched"
+            placeholder="Enter your email"
+          />
+          <span *ngIf="emailCtrl.invalid && emailCtrl.touched" class="form-error">
+            <ng-container *ngIf="emailCtrl.errors?.['required']">Email is required.</ng-container>
+            <ng-container *ngIf="emailCtrl.errors?.['email']">Please enter a valid email.</ng-container>
+          </span>
+        </div>
+
+        <!-- Role selector -->
+        <div class="form-group">
+          <label class="form-label">I am a...</label>
+          <div class="role-selector">
+            <label
+              class="role-option"
+              [class.role-option--active]="model.role === 'Tourist'"
+            >
+              <input type="radio" name="role" [(ngModel)]="model.role" value="Tourist" />
+              <span class="material-icons">hiking</span>
+              <span>Tourist</span>
+            </label>
+            <label
+              class="role-option"
+              [class.role-option--active]="model.role === 'Guide'"
+            >
+              <input type="radio" name="role" [(ngModel)]="model.role" value="Guide" />
+              <span class="material-icons">record_voice_over</span>
+              <span>Guide</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Password -->
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <div class="form-input-wrap">
+            <input
+              name="password"
+              [(ngModel)]="model.password"
+              required
+              minlength="6"
+              #passwordCtrl="ngModel"
+              [type]="showPassword ? 'text' : 'password'"
+              class="form-input form-input--with-icon"
+              [class.form-input--error]="passwordCtrl.invalid && passwordCtrl.touched"
+              placeholder="Min. 6 characters"
+            />
+            <button type="button" class="form-eye-btn" (click)="showPassword = !showPassword" tabindex="-1">
+              <span class="material-icons">{{ showPassword ? 'visibility_off' : 'visibility' }}</span>
+            </button>
+          </div>
+          <span *ngIf="passwordCtrl.invalid && passwordCtrl.touched" class="form-error">
+            <ng-container *ngIf="passwordCtrl.errors?.['required']">Password is required.</ng-container>
+            <ng-container *ngIf="passwordCtrl.errors?.['minlength']">Minimum 6 characters.</ng-container>
+          </span>
+        </div>
+
+        <!-- Confirm password -->
+        <div class="form-group">
+          <label class="form-label">Confirm password</label>
+          <div class="form-input-wrap">
+            <input
+              name="confirmPassword"
+              [(ngModel)]="model.confirmPassword"
+              required
+              #confirmCtrl="ngModel"
+              [type]="showConfirm ? 'text' : 'password'"
+              class="form-input form-input--with-icon"
+              [class.form-input--error]="confirmCtrl.invalid && confirmCtrl.touched"
+              placeholder="Repeat your password"
+            />
+            <button type="button" class="form-eye-btn" (click)="showConfirm = !showConfirm" tabindex="-1">
+              <span class="material-icons">{{ showConfirm ? 'visibility_off' : 'visibility' }}</span>
+            </button>
+          </div>
+          <span *ngIf="confirmCtrl.invalid && confirmCtrl.touched" class="form-error">
+            Please confirm your password.
+          </span>
+        </div>
+
+        <!-- Submit -->
+        <button type="submit" class="register-card__submit" [disabled]="loading">
+          <span *ngIf="!loading">Create Account</span>
+          <span *ngIf="loading" class="spinner"></span>
+        </button>
+
+      </form>
+    </div>
+  </div>
+
+</div>
