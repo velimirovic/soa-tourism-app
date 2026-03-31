@@ -1,8 +1,23 @@
+using Microsoft.EntityFrameworkCore;
+using StakeholdersService.Infrastructure;
+
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var dbHost     = Environment.GetEnvironmentVariable("DATABASE_HOST")     ?? "localhost";
+var dbPort     = Environment.GetEnvironmentVariable("DATABASE_PORT")     ?? "5432";
+var dbUser     = Environment.GetEnvironmentVariable("DATABASE_USER")     ?? "postgres";
+var dbPassword = Environment.GetEnvironmentVariable("DATABASE_PASSWORD") ?? "super";
+var dbName     = Environment.GetEnvironmentVariable("DATABASE_NAME")     ?? "stakeholders";
+
+var connectionString =
+    $"Host={dbHost};Port={dbPort};Username={dbUser};Password={dbPassword};Database={dbName}";
+
+builder.Services.AddDbContext<StakeholdersDbContext>(options =>
+    options.UseNpgsql(connectionString));
 
 // ── JWT ───────────────────────────────────────────────────────────────────────
 var jwtKey    = Environment.GetEnvironmentVariable("JWT_KEY")    ?? builder.Configuration["Jwt:Key"]    ?? "change-me-in-production-min32chars!!";
@@ -43,15 +58,21 @@ builder.Services.AddCors(options =>
 // ── OpenAPI / Controllers ─────────────────────────────────────────────────────
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
+builder.Services.AddControllers();
 
 // ─────────────────────────────────────────────────────────────────────────────
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+using (var scope = app.Services.CreateScope())
 {
-    app.MapOpenApi();
+    var db = scope.ServiceProvider.GetRequiredService<StakeholdersDbContext>();
+    db.Database.Migrate();
 }
 
+if (app.Environment.IsDevelopment())
+    app.MapOpenApi();
+
+app.MapControllers();
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();

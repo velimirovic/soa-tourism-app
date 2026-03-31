@@ -19,10 +19,10 @@
 
         <!-- Kad jeste ulogovan -->
         <ng-container *ngIf="authService.isLoggedIn()">
-          <span class="topbar__user">
+          <a routerLink="/profile" class="topbar__user">
             <span class="material-icons">account_circle</span>
-            {{ authService.getUser()?.username }}
-          </span>
+              {{ authService.getUser()?.username }}
+          </a>
           <button class="topbar__btn topbar__btn--icon">
             <span class="material-icons">mail_outline</span>
           </button>
