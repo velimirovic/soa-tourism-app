@@ -21,6 +21,9 @@ import { RegisterComponent } from './features/auth/register/register.component';
 import { HomeComponent }     from './features/home/home.component';
 import { UserListComponent } from './features/admin/user-list/user-list.component';
 
+//Profile
+import { ProfileComponent } from './features/profile/profile.component';
+
 @NgModule({
   declarations: [
     App,
@@ -28,7 +31,8 @@ import { UserListComponent } from './features/admin/user-list/user-list.componen
     SidebarComponent,
     LoginComponent,
     RegisterComponent,
-    HomeComponent,
+    HomeComponent, 
+    ProfileComponent,
     UserListComponent
   ],
   imports: [

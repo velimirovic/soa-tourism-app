@@ -7,6 +7,7 @@ import { ShellComponent }     from './features/layout/shell/shell.component';
 import { HomeComponent }      from './features/home/home.component';
 import { UserListComponent }  from './features/admin/user-list/user-list.component';
 import { AdminGuard }         from './core/guards/admin.guard';
+import { ProfileComponent } from './features/profile/profile.component';
 
 const routes: Routes = [
   // Auth pages (standalone, no shell)
@@ -18,9 +19,10 @@ const routes: Routes = [
     path: '',
     component: ShellComponent,
     children: [
-      { path: '',              redirectTo: 'home', pathMatch: 'full' },
-      { path: 'home',          component: HomeComponent },
-      { path: 'admin/users',   component: UserListComponent, canActivate: [AdminGuard] },
+      { path: '',     redirectTo: 'home', pathMatch: 'full' },
+      { path: 'home', component: HomeComponent },
+      { path: 'profile', component: ProfileComponent },
+      { path: 'admin/users',   component: UserListComponent, canActivate: [AdminGuard] }
     ]
   },
 
