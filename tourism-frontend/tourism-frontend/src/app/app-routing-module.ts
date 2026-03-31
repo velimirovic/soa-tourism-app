@@ -5,6 +5,7 @@ import { LoginComponent }    from './features/auth/login/login.component';
 import { RegisterComponent } from './features/auth/register/register.component';
 import { ShellComponent }    from './features/layout/shell/shell.component';
 import { HomeComponent }     from './features/home/home.component';
+import { ProfileComponent } from './features/profile/profile.component';
 
 const routes: Routes = [
   // Auth pages (standalone, no shell)
@@ -18,6 +19,7 @@ const routes: Routes = [
     children: [
       { path: '',     redirectTo: 'home', pathMatch: 'full' },
       { path: 'home', component: HomeComponent },
+      { path: 'profile', component: ProfileComponent }
     ]
   },
 
