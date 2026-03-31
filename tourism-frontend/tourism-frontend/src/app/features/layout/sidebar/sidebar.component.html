@@ -20,6 +20,19 @@
       <span class="material-icons sidebar__nav-icon">{{ item.icon }}</span>
       <span class="sidebar__nav-label">{{ item.label }}</span>
     </a>
+
+    <!-- Admin section — visible only to admins -->
+    <ng-container *ngIf="isAdmin">
+      <div class="sidebar__divider"></div>
+      <a
+        routerLink="/admin/users"
+        routerLinkActive="sidebar__nav-item--active"
+        class="sidebar__nav-item sidebar__nav-item--admin"
+      >
+        <span class="material-icons sidebar__nav-icon">manage_accounts</span>
+        <span class="sidebar__nav-label">Users</span>
+      </a>
+    </ng-container>
   </nav>
 
   <!-- Footer: Login/Register ili Logout -->

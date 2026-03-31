@@ -1,6 +1,7 @@
 using AuthService.DTOs;
 using AuthService.Infrastructure;
 using AuthService.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -101,6 +102,27 @@ public class AuthController : ControllerBase
             Email    = user.Email,
             Role     = user.Role
         });
+    }
+
+    // GET /auth/users
+    [HttpGet("users")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetAllUsers()
+    {
+        var users = await _db.Users
+            .OrderBy(u => u.Id)
+            .Select(u => new UserDto
+            {
+                Id        = u.Id,
+                Username  = u.Username,
+                Email     = u.Email,
+                Role      = u.Role,
+                IsBlocked = u.IsBlocked,
+                CreatedAt = u.CreatedAt
+            })
+            .ToListAsync();
+
+        return Ok(users);
     }
 
     // Helpers

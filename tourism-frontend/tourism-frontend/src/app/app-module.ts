@@ -19,6 +19,7 @@ import { RegisterComponent } from './features/auth/register/register.component';
 
 // Pages
 import { HomeComponent }     from './features/home/home.component';
+import { UserListComponent } from './features/admin/user-list/user-list.component';
 
 //Profile
 import { ProfileComponent } from './features/profile/profile.component';
@@ -31,7 +32,8 @@ import { ProfileComponent } from './features/profile/profile.component';
     LoginComponent,
     RegisterComponent,
     HomeComponent, 
-    ProfileComponent
+    ProfileComponent,
+    UserListComponent
   ],
   imports: [
     BrowserModule,
