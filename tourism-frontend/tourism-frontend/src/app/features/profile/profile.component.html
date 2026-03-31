@@ -1,0 +1,189 @@
+<div class="profile-page">
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="profile-page__loading">
+    <span class="material-icons spinning">autorenew</span>
+    <p>Loading profile...</p>
+  </div>
+
+  <ng-container *ngIf="!loading">
+
+    <!-- Header -->
+    <div class="profile-header">
+      <div class="profile-header__avatar">
+        <img
+          *ngIf="profile?.profilePicture"
+          [src]="profile!.profilePicture"
+          alt="Profile picture"
+          class="profile-header__avatar-img"
+        />
+        <span *ngIf="!profile?.profilePicture" class="material-icons profile-header__avatar-placeholder">
+          account_circle
+        </span>
+      </div>
+
+      <div class="profile-header__info">
+        <h1 class="profile-header__name">
+        {{ profile?.firstName }} {{ profile?.lastName }}
+        <span *ngIf="!profile?.firstName && !profile?.lastName" class="profile-header__no-name">
+            No name set
+        </span>
+        </h1>
+        <span class="profile-header__username">@{{ user?.username }}</span>
+        <span class="profile-header__role profile-header__role--{{ user?.role?.toLowerCase() }}">
+          <span class="material-icons">{{ user?.role === 'Guide' ? 'record_voice_over' : 'hiking' }}</span>
+          {{ user?.role }}
+        </span>
+      </div>
+
+      <button *ngIf="!editMode" class="profile-header__edit-btn" (click)="enterEdit()">
+        <span class="material-icons">edit</span>
+        Edit Profile
+      </button>
+    </div>
+
+    <!-- Success banner -->
+    <div *ngIf="successMsg" class="profile-alert profile-alert--success">
+      <span class="material-icons">check_circle</span>
+      {{ successMsg }}
+    </div>
+
+    <!-- Error banner -->
+    <div *ngIf="errorMsg" class="profile-alert profile-alert--error">
+      <span class="material-icons">error_outline</span>
+      {{ errorMsg }}
+    </div>
+
+    <!-- View mode -->
+    <div *ngIf="!editMode" class="profile-card">
+      <div class="profile-field">
+        <span class="profile-field__label">
+          <span class="material-icons">person</span> First Name
+        </span>
+        <span class="profile-field__value">{{ profile?.firstName || '—' }}</span>
+      </div>
+
+      <div class="profile-field">
+        <span class="profile-field__label">
+          <span class="material-icons">person_outline</span> Last Name
+        </span>
+        <span class="profile-field__value">{{ profile?.lastName || '—' }}</span>
+      </div>
+
+      <div class="profile-field">
+        <span class="profile-field__label">
+          <span class="material-icons">format_quote</span> Motto
+        </span>
+        <span class="profile-field__value profile-field__value--italic">
+          {{ profile?.motto || '—' }}
+        </span>
+      </div>
+
+      <div class="profile-field profile-field--full">
+        <span class="profile-field__label">
+          <span class="material-icons">menu_book</span> Biography
+        </span>
+        <p class="profile-field__value profile-field__value--bio">
+          {{ profile?.biography || '—' }}
+        </p>
+      </div>
+    </div>
+
+    <!-- Edit mode -->
+    <div *ngIf="editMode" class="profile-card">
+      <form #profileForm="ngForm" (ngSubmit)="onSubmit(profileForm)" novalidate>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">First Name</label>
+            <input
+              name="firstName"
+              [(ngModel)]="model.firstName"
+              required
+              #firstNameCtrl="ngModel"
+              type="text"
+              class="form-input"
+              [class.form-input--error]="firstNameCtrl.invalid && firstNameCtrl.touched"
+              placeholder="Enter your first name"
+            />
+            <span *ngIf="firstNameCtrl.invalid && firstNameCtrl.touched" class="form-error">
+              First name is required.
+            </span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Last Name</label>
+            <input
+              name="lastName"
+              [(ngModel)]="model.lastName"
+              required
+              #lastNameCtrl="ngModel"
+              type="text"
+              class="form-input"
+              [class.form-input--error]="lastNameCtrl.invalid && lastNameCtrl.touched"
+              placeholder="Enter your last name"
+            />
+            <span *ngIf="lastNameCtrl.invalid && lastNameCtrl.touched" class="form-error">
+              Last name is required.
+            </span>
+          </div>
+        </div>
+
+    <div class="form-group">
+        <label class="form-label">Profile Picture</label>
+        <div class="file-upload" (click)="fileInput.click()">
+            <span class="material-icons">upload</span>
+            <span>{{ model.profilePicture ? 'Change photo' : 'Upload photo' }}</span>
+        </div>
+        <input
+            #fileInput
+            type="file"
+            accept="image/*"
+            style="display:none"
+            (change)="onFileSelected($event)"
+        />
+        <img
+            *ngIf="model.profilePicture"
+            [src]="model.profilePicture"
+            class="file-upload__preview"
+            alt="Preview"
+        />
+        </div>
+
+            <div class="form-group">
+            <label class="form-label">Motto</label>
+            <input
+                name="motto"
+                [(ngModel)]="model.motto"
+                type="text"
+                class="form-input"
+                placeholder="Your personal quote (optional)"
+            />
+    </div>
+
+        <div class="form-group">
+          <label class="form-label">Biography</label>
+          <textarea
+            name="biography"
+            [(ngModel)]="model.biography"
+            class="form-input form-input--textarea"
+            placeholder="Tell us about yourself (optional)"
+            rows="4"
+          ></textarea>
+        </div>
+
+        <div class="profile-card__actions">
+          <button type="button" class="profile-btn profile-btn--ghost" (click)="cancelEdit()">
+            Cancel
+          </button>
+          <button type="submit" class="profile-btn profile-btn--primary" [disabled]="saving">
+            <span *ngIf="!saving">Save Changes</span>
+            <span *ngIf="saving" class="spinner"></span>
+          </button>
+        </div>
+
+      </form>
+    </div>
+
+  </ng-container>
+</div>

@@ -20,6 +20,9 @@ import { RegisterComponent } from './features/auth/register/register.component';
 // Pages
 import { HomeComponent }     from './features/home/home.component';
 
+//Profile
+import { ProfileComponent } from './features/profile/profile.component';
+
 @NgModule({
   declarations: [
     App,
@@ -27,7 +30,8 @@ import { HomeComponent }     from './features/home/home.component';
     SidebarComponent,
     LoginComponent,
     RegisterComponent,
-    HomeComponent
+    HomeComponent, 
+    ProfileComponent
   ],
   imports: [
     BrowserModule,
