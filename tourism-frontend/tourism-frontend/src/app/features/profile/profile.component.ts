@@ -106,4 +106,18 @@ export class ProfileComponent implements OnInit {
       motto: p.motto
     };
   }
+
+  onFileSelected(event: Event): void {
+  const input = event.target as HTMLInputElement;
+  if (!input.files?.length) return;
+
+  const file = input.files[0];
+  const reader = new FileReader();
+  reader.onload = () => {
+    this.model.profilePicture = reader.result as string;
+    this.cdr.detectChanges();
+  };
+  reader.readAsDataURL(file);
+}
+
 }

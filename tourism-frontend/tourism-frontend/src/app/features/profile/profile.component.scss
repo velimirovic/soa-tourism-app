@@ -271,6 +271,36 @@
 
 .spinning { animation: spin 1s linear infinite; }
 
+.file-upload {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.625rem 0.875rem;
+  border: 1.5px dashed #c084fc;
+  border-radius: 10px;
+  color: #a855f7;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #faf5ff;
+
+  .material-icons { font-size: 20px !important; }
+
+  &:hover {
+    background: #f3e8ff;
+    border-color: #a855f7;
+  }
+
+  &__preview {
+    margin-top: 0.75rem;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #e9d5ff;
+  }
+}
+
 @keyframes spin {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
