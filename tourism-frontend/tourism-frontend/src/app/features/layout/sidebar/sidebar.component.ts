@@ -18,6 +18,11 @@ export class SidebarComponent {
     { label: 'Me',       icon: 'account_circle', route: '/profile',  exact: false },
   ];
 
+  get isAdmin(): boolean {
+    const user = this.authService.getUser();
+    return user?.role === 'Admin';
+  }
+
   constructor(private authService: AuthService, private router: Router) {}
 
   get isLoggedIn(): boolean {

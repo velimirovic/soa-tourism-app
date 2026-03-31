@@ -19,6 +19,7 @@ import { RegisterComponent } from './features/auth/register/register.component';
 
 // Pages
 import { HomeComponent }     from './features/home/home.component';
+import { UserListComponent } from './features/admin/user-list/user-list.component';
 
 @NgModule({
   declarations: [
@@ -27,7 +28,8 @@ import { HomeComponent }     from './features/home/home.component';
     SidebarComponent,
     LoginComponent,
     RegisterComponent,
-    HomeComponent
+    HomeComponent,
+    UserListComponent
   ],
   imports: [
     BrowserModule,

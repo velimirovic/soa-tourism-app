@@ -83,6 +83,21 @@
 
   &__nav-icon { font-size: 22px; }
 
+  &__divider {
+    height: 1px;
+    background: #ddd4f5;
+    margin: 6px 4px;
+  }
+
+  &__nav-item--admin {
+    color: #7c3aed;
+
+    &:hover {
+      background: #e2d0fa;
+      color: #6d28d9;
+    }
+  }
+
   &__nav-label {
     font-size: 10px;
     font-weight: 500;
