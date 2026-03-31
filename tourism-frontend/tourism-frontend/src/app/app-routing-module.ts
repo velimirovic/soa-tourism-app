@@ -1,10 +1,12 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
-import { LoginComponent }    from './features/auth/login/login.component';
-import { RegisterComponent } from './features/auth/register/register.component';
-import { ShellComponent }    from './features/layout/shell/shell.component';
-import { HomeComponent }     from './features/home/home.component';
+import { LoginComponent }     from './features/auth/login/login.component';
+import { RegisterComponent }  from './features/auth/register/register.component';
+import { ShellComponent }     from './features/layout/shell/shell.component';
+import { HomeComponent }      from './features/home/home.component';
+import { UserListComponent }  from './features/admin/user-list/user-list.component';
+import { AdminGuard }         from './core/guards/admin.guard';
 import { ProfileComponent } from './features/profile/profile.component';
 
 const routes: Routes = [
@@ -19,7 +21,8 @@ const routes: Routes = [
     children: [
       { path: '',     redirectTo: 'home', pathMatch: 'full' },
       { path: 'home', component: HomeComponent },
-      { path: 'profile', component: ProfileComponent }
+      { path: 'profile', component: ProfileComponent },
+      { path: 'admin/users',   component: UserListComponent, canActivate: [AdminGuard] }
     ]
   },
 
