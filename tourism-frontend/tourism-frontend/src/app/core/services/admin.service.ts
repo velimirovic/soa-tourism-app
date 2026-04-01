@@ -22,4 +22,8 @@ export class AdminService {
   getAllUsers(): Observable<UserDto[]> {
     return this.http.get<UserDto[]>(`${this.base}/users`);
   }
+
+  toggleBlock(userId: number): Observable<UserDto> {
+    return this.http.patch<UserDto>(`${this.base}/users/${userId}/block`, {});
+  }
 }

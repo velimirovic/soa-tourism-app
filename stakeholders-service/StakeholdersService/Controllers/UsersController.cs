@@ -42,4 +42,29 @@ public class UsersController : ControllerBase
 
         return Ok(users);
     }
+
+    // PATCH /stakeholders/users/{id}/block
+    [HttpPatch("users/{id}/block")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> ToggleBlock(long id)
+    {
+        var client = _httpClientFactory.CreateClient("auth");
+
+        var authHeader = HttpContext.Request.Headers["Authorization"].ToString();
+        var request = new HttpRequestMessage(HttpMethod.Patch, $"/auth/users/{id}/block");
+        request.Headers.TryAddWithoutValidation("Authorization", authHeader);
+
+        var response = await client.SendAsync(request);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var errorContent = await response.Content.ReadAsStringAsync();
+            return StatusCode((int)response.StatusCode, JsonSerializer.Deserialize<JsonElement>(errorContent));
+        }
+
+        var content = await response.Content.ReadAsStringAsync();
+        var user    = JsonSerializer.Deserialize<UserDto>(content, _jsonOptions);
+
+        return Ok(user);
+    }
 }
