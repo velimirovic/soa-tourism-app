@@ -9,6 +9,9 @@ import { BlogListComponent }   from './features/blog/blog-list/blog-list.compone
 import { BlogCreateComponent } from './features/blog/blog-create/blog-create.component';
 import { BlogDetailComponent } from './features/blog/blog-detail/blog-detail.component';
 import { AuthGuard }           from './core/guards/auth.guard';
+import { UserListComponent }  from './features/admin/user-list/user-list.component';
+import { AdminGuard }         from './core/guards/admin.guard';
+import { ProfileComponent } from './features/profile/profile.component';
 
 const routes: Routes = [
   // Auth pages (standalone, no shell)
@@ -27,6 +30,8 @@ const routes: Routes = [
       { path: 'blogs',        component: BlogListComponent,   canActivate: [AuthGuard] },
       { path: 'blogs/new',    component: BlogCreateComponent, canActivate: [AuthGuard] },
       { path: 'blogs/:id',    component: BlogDetailComponent, canActivate: [AuthGuard] },
+      { path: 'profile', component: ProfileComponent },
+      { path: 'admin/users',   component: UserListComponent, canActivate: [AdminGuard] }
     ]
   },
 

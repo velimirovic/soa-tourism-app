@@ -1,6 +1,7 @@
 using AuthService.DTOs;
 using AuthService.Infrastructure;
 using AuthService.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -100,6 +101,57 @@ public class AuthController : ControllerBase
             Username = user.Username,
             Email    = user.Email,
             Role     = user.Role
+        });
+    }
+
+    // GET /auth/users
+    [HttpGet("users")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetAllUsers()
+    {
+        var users = await _db.Users
+            .OrderBy(u => u.Id)
+            .Select(u => new UserDto
+            {
+                Id        = u.Id,
+                Username  = u.Username,
+                Email     = u.Email,
+                Role      = u.Role,
+                IsBlocked = u.IsBlocked,
+                CreatedAt = u.CreatedAt
+            })
+            .ToListAsync();
+
+        return Ok(users);
+    }
+
+    // PATCH /auth/users/{id}/block
+    [HttpPatch("users/{id}/block")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> ToggleBlock(long id)
+    {
+        // Admin cannot block themselves
+        var adminIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                      ?? User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        var adminId = long.Parse(adminIdStr!);
+        if (adminId == id)
+            return BadRequest(new { error = "You cannot block your own account." });
+
+        var user = await _db.Users.FindAsync(id);
+        if (user is null)
+            return NotFound(new { error = "User not found." });
+
+        user.IsBlocked = !user.IsBlocked;
+        await _db.SaveChangesAsync();
+
+        return Ok(new UserDto
+        {
+            Id        = user.Id,
+            Username  = user.Username,
+            Email     = user.Email,
+            Role      = user.Role,
+            IsBlocked = user.IsBlocked,
+            CreatedAt = user.CreatedAt
         });
     }
 

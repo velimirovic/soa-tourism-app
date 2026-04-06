@@ -1,0 +1,49 @@
+<div class="user-list">
+  <h2 class="user-list__title">User Management</h2>
+
+  <div *ngIf="loading" class="user-list__state">Loading...</div>
+  <div *ngIf="error" class="user-list__state user-list__state--error">{{ error }}</div>
+
+  <table *ngIf="!loading && !error" class="user-list__table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Username</th>
+        <th>Email</th>
+        <th>Role</th>
+        <th>Blocked</th>
+        <th>Registered</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let user of users" [class.user-list__row--blocked]="user.isBlocked">
+        <td>{{ user.id }}</td>
+        <td>{{ user.username }}</td>
+        <td>{{ user.email }}</td>
+        <td>
+          <span class="user-list__badge user-list__badge--{{ user.role.toLowerCase() }}">
+            {{ user.role }}
+          </span>
+        </td>
+        <td>
+          <span [class]="user.isBlocked ? 'user-list__status--blocked' : 'user-list__status--active'">
+            {{ user.isBlocked ? 'Yes' : 'No' }}
+          </span>
+        </td>
+        <td>{{ user.createdAt | date: 'dd.MM.yyyy HH:mm' }}</td>
+        <td>
+          <button
+            *ngIf="user.role !== 'Admin'"
+            class="user-list__btn"
+            [class.user-list__btn--unblock]="user.isBlocked"
+            [class.user-list__btn--block]="!user.isBlocked"
+            (click)="toggleBlock(user)"
+          >
+            {{ user.isBlocked ? 'Unblock' : 'Block' }}
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

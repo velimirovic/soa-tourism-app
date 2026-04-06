@@ -38,8 +38,12 @@ services:
       DATABASE_USER: postgres
       DATABASE_PASSWORD: super
       DATABASE_NAME: stakeholders
+      JWT_KEY: change-me-in-production-min32chars!!
+      JWT_ISSUER: AuthService
+      AUTH_SERVICE_URL: http://auth-service:80
     depends_on:
       - stakeholders-db
+      - auth-service
 
   stakeholders-db:
     image: postgres:16
