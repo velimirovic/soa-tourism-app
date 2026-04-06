@@ -146,13 +146,13 @@ func main() {
 
 	// Rutiranje zahtjeva ka odgovarajucim servisima
 	mux.Handle("/api/auth", newReverseProxy(authServiceURL))
-    mux.Handle("/api/auth/", newReverseProxy(authServiceURL))
-    mux.Handle("/api/blogs", newReverseProxy(blogServiceURL))
-    mux.Handle("/api/blogs/", newReverseProxy(blogServiceURL))
-    mux.Handle("/api/tours", newReverseProxy(tourServiceURL))
-    mux.Handle("/api/tours/", newReverseProxy(tourServiceURL))
-    mux.Handle("/api/stakeholders", newReverseProxy(stakeholdersServiceURL))
-    mux.Handle("/api/stakeholders/", newReverseProxy(stakeholdersServiceURL))
+	mux.Handle("/api/auth/", newReverseProxy(authServiceURL))
+	mux.Handle("/api/blogs", newReverseProxy(blogServiceURL))
+	mux.Handle("/api/blogs/", newReverseProxy(blogServiceURL))
+	mux.Handle("/api/tours", newReverseProxy(tourServiceURL))
+	mux.Handle("/api/tours/", newReverseProxy(tourServiceURL))
+	mux.Handle("/api/stakeholders", newReverseProxy(stakeholdersServiceURL))
+	mux.Handle("/api/stakeholders/", newReverseProxy(stakeholdersServiceURL))
 
 	// Health check endpoint za provjeru stanja gateway-a
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {

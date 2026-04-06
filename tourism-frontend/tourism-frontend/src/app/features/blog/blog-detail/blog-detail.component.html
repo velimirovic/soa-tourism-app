@@ -1,0 +1,150 @@
+<div class="blog-detail">
+
+  <!-- Loading / Error -->
+  <div *ngIf="loading" class="state-msg">
+    <span class="material-icons spinning">sync</span>
+    Loading blog...
+  </div>
+
+  <div *ngIf="error" class="state-msg state-msg--error">
+    <span class="material-icons">error_outline</span>
+    {{ error }}
+  </div>
+
+  <ng-container *ngIf="!loading && blog">
+
+    <!-- Back -->
+    <button class="btn btn--ghost back-btn" (click)="goBack()">
+      <span class="material-icons">arrow_back</span>
+      All Blogs
+    </button>
+
+    <!-- Article -->
+    <article class="blog-article">
+
+      <!-- Header -->
+      <header class="blog-article__header">
+        <h1 class="blog-article__title">{{ blog.title }}</h1>
+        <div class="blog-article__meta">
+          <span class="meta-author">
+            <span class="material-icons">account_circle</span>
+            {{ blog.authorUsername }}
+          </span>
+          <span class="meta-date">
+            <span class="material-icons">calendar_today</span>
+            {{ formatDate(blog.createdAt) }}
+          </span>
+        </div>
+      </header>
+
+      <!-- Images -->
+      <div *ngIf="blog.images && blog.images.length > 0" class="blog-article__images">
+        <img
+          *ngFor="let img of blog.images"
+          [src]="img"
+          [alt]="blog.title"
+          class="blog-article__image"
+        />
+      </div>
+
+      <!-- Markdown content -->
+      <div
+        class="blog-article__body markdown-body"
+        [innerHTML]="renderedDescription"
+      ></div>
+
+      <!-- Like bar -->
+      <div class="blog-article__like-bar">
+        <button
+          class="like-btn"
+          [class.like-btn--active]="liked"
+          (click)="toggleLike()"
+          title="{{ liked ? 'Unlike' : 'Like' }}"
+        >
+          <span class="material-icons">{{ liked ? 'favorite' : 'favorite_border' }}</span>
+          <span>{{ likesCount }} {{ likesCount === 1 ? 'like' : 'likes' }}</span>
+        </button>
+      </div>
+
+    </article>
+
+    <!-- Comments section -->
+    <section class="comments">
+
+      <h2 class="comments__title">
+        <span class="material-icons">comment</span>
+        Comments ({{ blog.comments.length }})
+      </h2>
+
+      <!-- Add comment -->
+      <div class="comment-form">
+        <textarea
+          class="comment-form__input"
+          rows="3"
+          placeholder="Write a comment…"
+          [(ngModel)]="commentText"
+        ></textarea>
+        <div class="comment-form__footer">
+          <span *ngIf="commentError" class="comment-form__error">{{ commentError }}</span>
+          <button
+            class="btn btn--primary"
+            (click)="submitComment()"
+            [disabled]="commentSubmitting || !commentText.trim()"
+          >
+            <span class="material-icons">send</span>
+            {{ commentSubmitting ? 'Posting…' : 'Post' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Comment list -->
+      <div *ngIf="blog.comments.length === 0" class="comments__empty">
+        No comments yet. Be the first!
+      </div>
+
+      <div class="comment-list">
+        <div *ngFor="let comment of blog.comments" class="comment">
+
+          <div class="comment__header">
+            <span class="comment__author">
+              <span class="material-icons">account_circle</span>
+              {{ comment.username }}
+            </span>
+            <span class="comment__date">{{ formatDate(comment.createdAt) }}</span>
+            <span *ngIf="comment.updatedAt !== comment.createdAt" class="comment__edited">(edited)</span>
+
+            <!-- Own comment controls -->
+            <div *ngIf="comment.userId === currentUserId" class="comment__actions">
+              <button class="icon-btn" (click)="startEditComment(comment)" title="Edit">
+                <span class="material-icons">edit</span>
+              </button>
+              <button class="icon-btn icon-btn--danger" (click)="deleteComment(comment)" title="Delete">
+                <span class="material-icons">delete</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Normal view -->
+          <p *ngIf="editingCommentId !== comment._id" class="comment__text">{{ comment.text }}</p>
+
+          <!-- Edit mode -->
+          <div *ngIf="editingCommentId === comment._id" class="comment__edit">
+            <textarea
+              class="comment-form__input"
+              rows="3"
+              [(ngModel)]="editingCommentText"
+            ></textarea>
+            <div class="comment__edit-actions">
+              <button class="btn btn--ghost btn--sm" (click)="cancelEditComment()">Cancel</button>
+              <button class="btn btn--primary btn--sm" (click)="saveEditComment(comment)">Save</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+  </ng-container>
+
+</div>

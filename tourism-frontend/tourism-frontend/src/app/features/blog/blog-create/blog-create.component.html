@@ -1,0 +1,106 @@
+<div class="blog-create">
+
+  <div class="blog-create__header">
+    <button class="btn btn--ghost" (click)="cancel()">
+      <span class="material-icons">arrow_back</span>
+      Back
+    </button>
+    <h1 class="blog-create__title">
+      <span class="material-icons">edit</span>
+      Write a Blog
+    </h1>
+  </div>
+
+  <div *ngIf="error" class="blog-create__error">
+    <span class="material-icons">error_outline</span>
+    {{ error }}
+  </div>
+
+  <div class="blog-create__form">
+
+    <!-- Title -->
+    <div class="field">
+      <label class="field__label" for="title">Title *</label>
+      <input
+        id="title"
+        class="field__input"
+        type="text"
+        placeholder="What is your blog about?"
+        [(ngModel)]="title"
+        maxlength="200"
+      />
+    </div>
+
+    <!-- Description with markdown preview toggle -->
+    <div class="field">
+      <div class="field__label-row">
+        <label class="field__label">Description * <span class="field__hint">(Markdown supported)</span></label>
+        <button type="button" class="btn btn--toggle" (click)="showPreview = !showPreview">
+          <span class="material-icons">{{ showPreview ? 'edit' : 'preview' }}</span>
+          {{ showPreview ? 'Edit' : 'Preview' }}
+        </button>
+      </div>
+
+      <div class="editor-split">
+        <textarea
+          class="editor-split__textarea"
+          placeholder="Write your blog content here using Markdown...&#10;&#10;# Heading&#10;**Bold**, *italic*, [links](url)&#10;- list items"
+          [(ngModel)]="description"
+          rows="18"
+          [class.editor-split__textarea--hidden]="showPreview"
+        ></textarea>
+
+        <div
+          class="editor-split__preview markdown-body"
+          [innerHTML]="renderedDescription"
+          [class.editor-split__preview--visible]="showPreview"
+        ></div>
+      </div>
+    </div>
+
+    <!-- Images (optional) -->
+    <div class="field">
+      <label class="field__label">Images <span class="field__hint">(optional — paste image URLs)</span></label>
+
+      <div class="image-input">
+        <input
+          class="field__input"
+          type="url"
+          placeholder="https://example.com/image.jpg"
+          [(ngModel)]="imageInput"
+          (keydown.enter)="addImage(); $event.preventDefault()"
+        />
+        <button type="button" class="btn btn--primary" (click)="addImage()">
+          <span class="material-icons">add</span>
+          Add
+        </button>
+      </div>
+
+      <div *ngIf="images.length > 0" class="image-chips">
+        <div *ngFor="let img of images; let i = index" class="image-chip">
+          <img [src]="img" [alt]="'image ' + (i + 1)" class="image-chip__thumb" />
+          <span class="image-chip__url">{{ img }}</span>
+          <button type="button" class="image-chip__remove" (click)="removeImage(i)" title="Remove">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="blog-create__actions">
+      <button type="button" class="btn btn--ghost" (click)="cancel()">Cancel</button>
+      <button
+        type="button"
+        class="btn btn--primary"
+        (click)="submit()"
+        [disabled]="submitting"
+      >
+        <span class="material-icons">{{ submitting ? 'hourglass_top' : 'publish' }}</span>
+        {{ submitting ? 'Publishing…' : 'Publish Blog' }}
+      </button>
+    </div>
+
+  </div>
+
+</div>
