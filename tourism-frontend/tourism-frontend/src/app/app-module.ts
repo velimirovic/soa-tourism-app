@@ -18,7 +18,10 @@ import { LoginComponent }    from './features/auth/login/login.component';
 import { RegisterComponent } from './features/auth/register/register.component';
 
 // Pages
-import { HomeComponent }     from './features/home/home.component';
+import { HomeComponent }          from './features/home/home.component';
+import { BlogListComponent }      from './features/blog/blog-list/blog-list.component';
+import { BlogCreateComponent }    from './features/blog/blog-create/blog-create.component';
+import { BlogDetailComponent }    from './features/blog/blog-detail/blog-detail.component';
 
 @NgModule({
   declarations: [
@@ -27,7 +30,10 @@ import { HomeComponent }     from './features/home/home.component';
     SidebarComponent,
     LoginComponent,
     RegisterComponent,
-    HomeComponent
+    HomeComponent,
+    BlogListComponent,
+    BlogCreateComponent,
+    BlogDetailComponent,
   ],
   imports: [
     BrowserModule,

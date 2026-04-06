@@ -12,6 +12,7 @@ export class SidebarComponent {
 
   navItems = [
     { label: 'Home',     icon: 'home',          route: '/home',     exact: true  },
+    { label: 'Blogs',    icon: 'article',        route: '/blogs',    exact: false },
     { label: 'Guides',   icon: 'person',         route: '/guides',   exact: false },
     { label: 'Tours',    icon: 'map',            route: '/tours',    exact: false },
     { label: 'Bookings', icon: 'bookmark',       route: '/bookings', exact: false },
