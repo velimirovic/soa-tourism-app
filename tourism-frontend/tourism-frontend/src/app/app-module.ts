@@ -22,6 +22,10 @@ import { HomeComponent }          from './features/home/home.component';
 import { BlogListComponent }      from './features/blog/blog-list/blog-list.component';
 import { BlogCreateComponent }    from './features/blog/blog-create/blog-create.component';
 import { BlogDetailComponent }    from './features/blog/blog-detail/blog-detail.component';
+import { UserListComponent } from './features/admin/user-list/user-list.component';
+
+//Profile
+import { ProfileComponent } from './features/profile/profile.component';
 
 @NgModule({
   declarations: [
@@ -34,6 +38,8 @@ import { BlogDetailComponent }    from './features/blog/blog-detail/blog-detail.
     BlogListComponent,
     BlogCreateComponent,
     BlogDetailComponent,
+    ProfileComponent,
+    UserListComponent
   ],
   imports: [
     BrowserModule,
