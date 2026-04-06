@@ -1,0 +1,62 @@
+<div class="blog-list">
+
+  <div class="blog-list__header">
+    <h1 class="blog-list__title">
+      <span class="material-icons">article</span>
+      Blogs
+    </h1>
+    <button class="btn btn--primary" (click)="createBlog()">
+      <span class="material-icons">edit</span>
+      Write a Blog
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="blog-list__state">
+    <span class="material-icons spinning">sync</span>
+    Loading blogs...
+  </div>
+
+  <div *ngIf="error" class="blog-list__state blog-list__state--error">
+    <span class="material-icons">error_outline</span>
+    {{ error }}
+  </div>
+
+  <div *ngIf="!loading && !error && blogs.length === 0" class="blog-list__state">
+    <span class="material-icons">inbox</span>
+    No blogs yet. Be the first to write one!
+  </div>
+
+  <div *ngIf="!loading && blogs.length > 0" class="blog-list__grid">
+    <article
+      *ngFor="let blog of blogs"
+      class="blog-card"
+      (click)="openBlog(blog._id)"
+    >
+      <div class="blog-card__image-row" *ngIf="blog.images && blog.images.length > 0">
+        <img [src]="blog.images[0]" [alt]="blog.title" class="blog-card__thumb" />
+      </div>
+
+      <div class="blog-card__body">
+        <h2 class="blog-card__title">{{ blog.title }}</h2>
+        <p class="blog-card__excerpt">{{ excerpt(blog.description) }}</p>
+      </div>
+
+      <div class="blog-card__footer">
+        <span class="blog-card__author">
+          <span class="material-icons">account_circle</span>
+          {{ blog.authorUsername }}
+        </span>
+        <span class="blog-card__date">{{ formatDate(blog.createdAt) }}</span>
+        <span class="blog-card__meta">
+          <span class="material-icons">favorite</span>
+          {{ blog.likes.length }}
+        </span>
+        <span class="blog-card__meta">
+          <span class="material-icons">comment</span>
+          {{ blog.comments.length }}
+        </span>
+      </div>
+    </article>
+  </div>
+
+</div>
