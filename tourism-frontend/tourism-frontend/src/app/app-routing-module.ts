@@ -27,9 +27,10 @@ const routes: Routes = [
       { path: 'home',   component: HomeComponent },
 
       // Blog routes — require login
-      { path: 'blogs',        component: BlogListComponent,   canActivate: [AuthGuard] },
-      { path: 'blogs/new',    component: BlogCreateComponent, canActivate: [AuthGuard] },
-      { path: 'blogs/:id',    component: BlogDetailComponent, canActivate: [AuthGuard] },
+      { path: 'blogs',          component: BlogListComponent,   canActivate: [AuthGuard] },
+      { path: 'blogs/new',      component: BlogCreateComponent, canActivate: [AuthGuard] },
+      { path: 'blogs/:id/edit', component: BlogCreateComponent, canActivate: [AuthGuard] },
+      { path: 'blogs/:id',      component: BlogDetailComponent, canActivate: [AuthGuard] },
       { path: 'profile', component: ProfileComponent },
       { path: 'admin/users',   component: UserListComponent, canActivate: [AdminGuard] }
     ]

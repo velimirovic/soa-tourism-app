@@ -15,7 +15,6 @@ export class SidebarComponent {
     { label: 'Blogs',    icon: 'article',        route: '/blogs',    exact: false },
     { label: 'Guides',   icon: 'person',         route: '/guides',   exact: false },
     { label: 'Tours',    icon: 'map',            route: '/tours',    exact: false },
-    { label: 'Bookings', icon: 'bookmark',       route: '/bookings', exact: false },
     { label: 'Me',       icon: 'account_circle', route: '/profile',  exact: false },
   ];
 

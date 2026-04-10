@@ -49,6 +49,14 @@ export class BlogService {
     return this.http.post<Blog>(this.base, data);
   }
 
+  updateBlog(id: string, data: CreateBlogRequest): Observable<Blog> {
+    return this.http.put<Blog>(`${this.base}/${id}`, data);
+  }
+
+  deleteBlog(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/${id}`);
+  }
+
   toggleLike(id: string): Observable<{ likes: number; liked: boolean }> {
     return this.http.post<{ likes: number; liked: boolean }>(`${this.base}/${id}/like`, {});
   }

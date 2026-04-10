@@ -28,12 +28,21 @@
 
   <div *ngIf="!loading && blogs.length > 0" class="blog-list__grid">
     <article
-      *ngFor="let blog of blogs"
+      *ngFor="let blog of pagedBlogs"
       class="blog-card"
       (click)="openBlog(blog._id)"
     >
-      <div class="blog-card__image-row" *ngIf="blog.images && blog.images.length > 0">
-        <img [src]="blog.images[0]" [alt]="blog.title" class="blog-card__thumb" />
+      <!-- Thumbnail or placeholder -->
+      <div class="blog-card__image-row">
+        <img
+          *ngIf="blog.images && blog.images.length > 0"
+          [src]="blog.images[0]"
+          [alt]="blog.title"
+          class="blog-card__thumb"
+        />
+        <div *ngIf="!blog.images || blog.images.length === 0" class="blog-card__placeholder">
+          <span class="material-icons">article</span>
+        </div>
       </div>
 
       <div class="blog-card__body">
@@ -55,8 +64,49 @@
           <span class="material-icons">comment</span>
           {{ blog.comments.length }}
         </span>
+
+        <!-- Own blog actions -->
+        <div *ngIf="blog.authorId === currentUserId" class="blog-card__actions">
+          <button class="icon-btn" (click)="editBlog($event, blog)" title="Edit">
+            <span class="material-icons">edit</span>
+          </button>
+          <button class="icon-btn icon-btn--danger" (click)="requestDeleteBlog($event, blog)" title="Delete">
+            <span class="material-icons">delete</span>
+          </button>
+        </div>
       </div>
     </article>
+  </div>
+
+  <!-- Pagination -->
+  <div *ngIf="totalPages > 1" class="blog-list__pagination">
+    <button class="page-btn" [disabled]="currentPage === 1" (click)="setPage(currentPage - 1)">
+      <span class="material-icons">chevron_left</span>
+    </button>
+    <button
+      *ngFor="let p of [].constructor(totalPages); let i = index"
+      class="page-btn"
+      [class.page-btn--active]="currentPage === i + 1"
+      (click)="setPage(i + 1)"
+    >
+      {{ i + 1 }}
+    </button>
+    <button class="page-btn" [disabled]="currentPage === totalPages" (click)="setPage(currentPage + 1)">
+      <span class="material-icons">chevron_right</span>
+    </button>
+  </div>
+
+  <!-- Delete confirmation -->
+  <div *ngIf="confirmDeleteBlog" class="confirm-overlay">
+    <div class="confirm-dialog">
+      <span class="material-icons confirm-dialog__icon">warning</span>
+      <p class="confirm-dialog__text">Delete "{{ confirmDeleteBlog.title }}"?</p>
+      <p class="confirm-dialog__sub">This action cannot be undone.</p>
+      <div class="confirm-dialog__actions">
+        <button class="btn btn--ghost btn--sm" (click)="cancelDelete()">Cancel</button>
+        <button class="btn btn--danger btn--sm" (click)="confirmDelete()">Delete</button>
+      </div>
+    </div>
   </div>
 
 </div>
