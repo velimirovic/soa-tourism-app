@@ -1,5 +1,5 @@
-import { Component } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, ChangeDetectorRef, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { marked } from 'marked';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { BlogService } from '../../../core/services/blog.service';
@@ -10,21 +10,50 @@ import { BlogService } from '../../../core/services/blog.service';
   templateUrl: './blog-create.component.html',
   styleUrl: './blog-create.component.scss'
 })
-export class BlogCreateComponent {
+export class BlogCreateComponent implements OnInit {
   title = '';
   description = '';
-  imageInput = '';
   images: string[] = [];
 
   submitting = false;
   error = '';
   showPreview = false;
 
+  editId: string | null = null;
+  loading = false;
+
   constructor(
     private blogService: BlogService,
     private router: Router,
-    private sanitizer: DomSanitizer
+    private route: ActivatedRoute,
+    private sanitizer: DomSanitizer,
+    private cdr: ChangeDetectorRef
   ) {}
+
+  ngOnInit(): void {
+    this.editId = this.route.snapshot.paramMap.get('id');
+    if (this.editId) {
+      this.loading = true;
+      this.blogService.getBlog(this.editId).subscribe({
+        next: (blog) => {
+          this.title = blog.title;
+          this.description = blog.description;
+          this.images = [...blog.images];
+          this.loading = false;
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.error = 'Failed to load blog.';
+          this.loading = false;
+          this.cdr.detectChanges();
+        }
+      });
+    }
+  }
+
+  get isEditMode(): boolean {
+    return !!this.editId;
+  }
 
   get renderedDescription(): SafeHtml {
     if (!this.description.trim()) {
@@ -34,12 +63,20 @@ export class BlogCreateComponent {
     return this.sanitizer.bypassSecurityTrustHtml(html);
   }
 
-  addImage(): void {
-    const url = this.imageInput.trim();
-    if (url && !this.images.includes(url)) {
-      this.images.push(url);
-    }
-    this.imageInput = '';
+  onFilesSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files?.length) return;
+
+    Array.from(input.files).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.images.push(reader.result as string);
+        this.cdr.detectChanges();
+      };
+      reader.readAsDataURL(file);
+    });
+
+    input.value = '';
   }
 
   removeImage(index: number): void {
@@ -55,20 +92,30 @@ export class BlogCreateComponent {
     this.submitting = true;
     this.error = '';
 
-    this.blogService.createBlog({
+    const data = {
       title: this.title.trim(),
       description: this.description.trim(),
       images: this.images
-    }).subscribe({
+    };
+
+    const request$ = this.isEditMode
+      ? this.blogService.updateBlog(this.editId!, data)
+      : this.blogService.createBlog(data);
+
+    request$.subscribe({
       next: (blog) => this.router.navigate(['/blogs', blog._id]),
       error: () => {
-        this.error = 'Failed to create blog. Please try again.';
+        this.error = this.isEditMode ? 'Failed to update blog.' : 'Failed to create blog. Please try again.';
         this.submitting = false;
       }
     });
   }
 
   cancel(): void {
-    this.router.navigate(['/blogs']);
+    if (this.isEditMode) {
+      this.router.navigate(['/blogs', this.editId]);
+    } else {
+      this.router.navigate(['/blogs']);
+    }
   }
 }
