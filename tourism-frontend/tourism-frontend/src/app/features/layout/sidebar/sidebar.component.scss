@@ -2,10 +2,12 @@
   display: flex;
   flex-direction: column;
   width: 110px;
-  min-height: 100vh;
+  height: 100vh;
+  flex-shrink: 0;
   background: #ede9f8;
   padding: 16px 8px 12px;
   border-right: 1px solid #ddd4f5;
+  overflow-y: auto;
 
   // ── Logo ────────────────────────────────────────────────────
   &__logo {

@@ -64,6 +64,30 @@
           <span class="material-icons">{{ liked ? 'favorite' : 'favorite_border' }}</span>
           <span>{{ likesCount }} {{ likesCount === 1 ? 'like' : 'likes' }}</span>
         </button>
+
+        <div *ngIf="blog.authorId === currentUserId" class="blog-article__owner-actions">
+          <button class="btn btn--ghost btn--sm" (click)="editBlog()">
+            <span class="material-icons">edit</span>
+            Edit
+          </button>
+          <button class="btn btn--danger btn--sm" (click)="requestDeleteBlog()">
+            <span class="material-icons">delete</span>
+            Delete
+          </button>
+        </div>
+      </div>
+
+      <!-- Delete confirmation -->
+      <div *ngIf="showDeleteConfirm" class="confirm-overlay">
+        <div class="confirm-dialog">
+          <span class="material-icons confirm-dialog__icon">warning</span>
+          <p class="confirm-dialog__text">Delete this blog?</p>
+          <p class="confirm-dialog__sub">This action cannot be undone.</p>
+          <div class="confirm-dialog__actions">
+            <button class="btn btn--ghost btn--sm" (click)="cancelDeleteBlog()">Cancel</button>
+            <button class="btn btn--danger btn--sm" (click)="confirmDeleteBlog()">Delete</button>
+          </div>
+        </div>
       </div>
 
     </article>
@@ -83,8 +107,12 @@
           rows="3"
           placeholder="Write a comment…"
           [(ngModel)]="commentText"
+          [maxlength]="COMMENT_MAX_LENGTH"
         ></textarea>
         <div class="comment-form__footer">
+          <span class="comment-form__counter" [class.comment-form__counter--warn]="commentText.length >= COMMENT_MAX_LENGTH - 20">
+            {{ commentText.length }} / {{ COMMENT_MAX_LENGTH }}
+          </span>
           <span *ngIf="commentError" class="comment-form__error">{{ commentError }}</span>
           <button
             class="btn btn--primary"
@@ -103,7 +131,7 @@
       </div>
 
       <div class="comment-list">
-        <div *ngFor="let comment of blog.comments" class="comment">
+        <div *ngFor="let comment of pagedComments" class="comment">
 
           <div class="comment__header">
             <span class="comment__author">
@@ -118,7 +146,7 @@
               <button class="icon-btn" (click)="startEditComment(comment)" title="Edit">
                 <span class="material-icons">edit</span>
               </button>
-              <button class="icon-btn icon-btn--danger" (click)="deleteComment(comment)" title="Delete">
+              <button class="icon-btn icon-btn--danger" (click)="requestDeleteComment(comment)" title="Delete">
                 <span class="material-icons">delete</span>
               </button>
             </div>
@@ -133,13 +161,57 @@
               class="comment-form__input"
               rows="3"
               [(ngModel)]="editingCommentText"
+              [maxlength]="COMMENT_MAX_LENGTH"
             ></textarea>
-            <div class="comment__edit-actions">
-              <button class="btn btn--ghost btn--sm" (click)="cancelEditComment()">Cancel</button>
-              <button class="btn btn--primary btn--sm" (click)="saveEditComment(comment)">Save</button>
+            <div class="comment__edit-footer">
+              <span class="comment-form__counter" [class.comment-form__counter--warn]="editingCommentText.length >= COMMENT_MAX_LENGTH - 20">
+                {{ editingCommentText.length }} / {{ COMMENT_MAX_LENGTH }}
+              </span>
+              <div class="comment__edit-actions">
+                <button class="btn btn--ghost btn--sm" (click)="cancelEditComment()">Cancel</button>
+                <button class="btn btn--primary btn--sm" (click)="saveEditComment(comment)">Save</button>
+              </div>
             </div>
           </div>
 
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div *ngIf="totalPages > 1" class="comments__pagination">
+        <button
+          class="page-btn"
+          [disabled]="commentPage === 1"
+          (click)="setPage(commentPage - 1)"
+        >
+          <span class="material-icons">chevron_left</span>
+        </button>
+        <button
+          *ngFor="let p of [].constructor(totalPages); let i = index"
+          class="page-btn"
+          [class.page-btn--active]="commentPage === i + 1"
+          (click)="setPage(i + 1)"
+        >
+          {{ i + 1 }}
+        </button>
+        <button
+          class="page-btn"
+          [disabled]="commentPage === totalPages"
+          (click)="setPage(commentPage + 1)"
+        >
+          <span class="material-icons">chevron_right</span>
+        </button>
+      </div>
+
+      <!-- Delete confirmation dialog -->
+      <div *ngIf="confirmDeleteComment" class="confirm-overlay">
+        <div class="confirm-dialog">
+          <span class="material-icons confirm-dialog__icon">warning</span>
+          <p class="confirm-dialog__text">Delete this comment?</p>
+          <div class="confirm-dialog__actions">
+            <button class="btn btn--ghost btn--sm" (click)="cancelDeleteComment()">Cancel</button>
+            <button class="btn btn--danger btn--sm" (click)="confirmDelete()">Delete</button>
+          </div>
         </div>
       </div>
 

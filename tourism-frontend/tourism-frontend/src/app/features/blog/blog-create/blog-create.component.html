@@ -6,8 +6,8 @@
       Back
     </button>
     <h1 class="blog-create__title">
-      <span class="material-icons">edit</span>
-      Write a Blog
+      <span class="material-icons">{{ isEditMode ? 'edit_note' : 'edit' }}</span>
+      {{ isEditMode ? 'Edit Blog' : 'Write a Blog' }}
     </h1>
   </div>
 
@@ -60,26 +60,25 @@
 
     <!-- Images (optional) -->
     <div class="field">
-      <label class="field__label">Images <span class="field__hint">(optional — paste image URLs)</span></label>
+      <label class="field__label">Images <span class="field__hint">(optional — upload from your device)</span></label>
 
-      <div class="image-input">
-        <input
-          class="field__input"
-          type="url"
-          placeholder="https://example.com/image.jpg"
-          [(ngModel)]="imageInput"
-          (keydown.enter)="addImage(); $event.preventDefault()"
-        />
-        <button type="button" class="btn btn--primary" (click)="addImage()">
-          <span class="material-icons">add</span>
-          Add
-        </button>
+      <div class="file-upload" (click)="fileInput.click()">
+        <span class="material-icons">upload</span>
+        <span>Click to upload images</span>
       </div>
+      <input
+        #fileInput
+        type="file"
+        accept="image/*"
+        multiple
+        style="display:none"
+        (change)="onFilesSelected($event)"
+      />
 
       <div *ngIf="images.length > 0" class="image-chips">
         <div *ngFor="let img of images; let i = index" class="image-chip">
           <img [src]="img" [alt]="'image ' + (i + 1)" class="image-chip__thumb" />
-          <span class="image-chip__url">{{ img }}</span>
+          <span class="image-chip__name">Image {{ i + 1 }}</span>
           <button type="button" class="image-chip__remove" (click)="removeImage(i)" title="Remove">
             <span class="material-icons">close</span>
           </button>
@@ -96,8 +95,8 @@
         (click)="submit()"
         [disabled]="submitting"
       >
-        <span class="material-icons">{{ submitting ? 'hourglass_top' : 'publish' }}</span>
-        {{ submitting ? 'Publishing…' : 'Publish Blog' }}
+        <span class="material-icons">{{ submitting ? 'hourglass_top' : (isEditMode ? 'save' : 'publish') }}</span>
+        {{ submitting ? (isEditMode ? 'Saving…' : 'Publishing…') : (isEditMode ? 'Save Changes' : 'Publish Blog') }}
       </button>
     </div>
 

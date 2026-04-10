@@ -25,6 +25,12 @@ export class BlogDetailComponent implements OnInit {
 
   likesCount = 0;
   liked = false;
+  showDeleteConfirm = false;
+
+  readonly COMMENT_MAX_LENGTH = 500;
+  readonly PAGE_SIZE = 7;
+  commentPage = 1;
+  confirmDeleteComment: Comment | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -85,6 +91,21 @@ export class BlogDetailComponent implements OnInit {
     });
   }
 
+  get pagedComments(): Comment[] {
+    if (!this.blog) return [];
+    const start = (this.commentPage - 1) * this.PAGE_SIZE;
+    return this.blog.comments.slice(start, start + this.PAGE_SIZE);
+  }
+
+  get totalPages(): number {
+    return Math.ceil((this.blog?.comments.length ?? 0) / this.PAGE_SIZE);
+  }
+
+  setPage(page: number): void {
+    this.commentPage = page;
+    this.cdr.detectChanges();
+  }
+
   submitComment(): void {
     if (!this.blog || !this.commentText.trim()) return;
     this.commentSubmitting = true;
@@ -93,6 +114,7 @@ export class BlogDetailComponent implements OnInit {
     this.blogService.addComment(this.blog._id, this.commentText.trim()).subscribe({
       next: (comment) => {
         this.blog!.comments.push(comment);
+        this.commentPage = this.totalPages;
         this.commentText = '';
         this.commentSubmitting = false;
         this.cdr.detectChanges();
@@ -127,13 +149,47 @@ export class BlogDetailComponent implements OnInit {
     });
   }
 
-  deleteComment(comment: Comment): void {
-    if (!this.blog) return;
+  requestDeleteComment(comment: Comment): void {
+    this.confirmDeleteComment = comment;
+  }
+
+  cancelDeleteComment(): void {
+    this.confirmDeleteComment = null;
+  }
+
+  confirmDelete(): void {
+    const comment = this.confirmDeleteComment;
+    if (!this.blog || !comment) return;
+    this.confirmDeleteComment = null;
     this.blogService.deleteComment(this.blog._id, comment._id).subscribe({
       next: () => {
         this.blog!.comments = this.blog!.comments.filter(c => c._id !== comment._id);
+        if (this.commentPage > this.totalPages && this.commentPage > 1) {
+          this.commentPage--;
+        }
         this.cdr.detectChanges();
       }
+    });
+  }
+
+  editBlog(): void {
+    if (!this.blog) return;
+    this.router.navigate(['/blogs', this.blog._id, 'edit']);
+  }
+
+  requestDeleteBlog(): void {
+    this.showDeleteConfirm = true;
+  }
+
+  cancelDeleteBlog(): void {
+    this.showDeleteConfirm = false;
+  }
+
+  confirmDeleteBlog(): void {
+    if (!this.blog) return;
+    this.showDeleteConfirm = false;
+    this.blogService.deleteBlog(this.blog._id).subscribe({
+      next: () => this.router.navigate(['/blogs'])
     });
   }
 
