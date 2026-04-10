@@ -19,3 +19,12 @@
 
 # Docker
 **/.dockerignore
+
+# IDEs and Editors
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docupdates
