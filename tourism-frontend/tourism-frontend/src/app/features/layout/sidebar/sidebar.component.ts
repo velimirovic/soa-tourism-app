@@ -11,11 +11,11 @@ import { AuthService } from '../../../core/services/auth.service';
 export class SidebarComponent {
 
   navItems = [
-    { label: 'Home',     icon: 'home',          route: '/home',     exact: true  },
-    { label: 'Blogs',    icon: 'article',        route: '/blogs',    exact: false },
-    { label: 'Guides',   icon: 'person',         route: '/guides',   exact: false },
-    { label: 'Tours',    icon: 'map',            route: '/tours',    exact: false },
-    { label: 'Me',       icon: 'account_circle', route: '/profile',  exact: false },
+    { label: 'Home',     icon: 'home',           route: '/home',    exact: true,  requiresAuth: false },
+    { label: 'Blogs',    icon: 'article',        route: '/blogs',   exact: false, requiresAuth: true  },
+    { label: 'Guides',   icon: 'person',         route: '/guides',  exact: false, requiresAuth: false },
+    { label: 'Tours',    icon: 'map',            route: '/tours',   exact: false, requiresAuth: false },
+    { label: 'Me',       icon: 'account_circle', route: '/profile', exact: false, requiresAuth: true  },
   ];
 
   get isAdmin(): boolean {
@@ -27,6 +27,10 @@ export class SidebarComponent {
 
   get isLoggedIn(): boolean {
     return this.authService.isLoggedIn();
+  }
+
+  get visibleNavItems() {
+    return this.navItems.filter(item => !item.requiresAuth || this.isLoggedIn);
   }
 
   get user() {

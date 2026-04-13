@@ -31,7 +31,7 @@ const routes: Routes = [
       { path: 'blogs/new',      component: BlogCreateComponent, canActivate: [AuthGuard] },
       { path: 'blogs/:id/edit', component: BlogCreateComponent, canActivate: [AuthGuard] },
       { path: 'blogs/:id',      component: BlogDetailComponent, canActivate: [AuthGuard] },
-      { path: 'profile', component: ProfileComponent },
+      { path: 'profile', component: ProfileComponent, canActivate: [AuthGuard] },
       { path: 'admin/users',   component: UserListComponent, canActivate: [AdminGuard] }
     ]
   },

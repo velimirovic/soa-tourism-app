@@ -13,7 +13,7 @@ import (
 
 var jwtKey []byte
 
-// javne rute koje ne zahtijevaju JWT token
+// javne rute koje ne zahtevaju JWT token
 var publicPaths = []string{
 	"/auth/register",
 	"/auth/login",
@@ -21,7 +21,7 @@ var publicPaths = []string{
 }
 
 func isPublicPath(path string) bool {
-	// Skidamo /api prefix radi poređenja
+	// Skidamo /api prefiks radi poređenja
 	stripped := strings.TrimPrefix(path, "/api")
 	for _, p := range publicPaths {
 		if stripped == p || strings.HasPrefix(stripped, p+"/") {
@@ -38,7 +38,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
-		// Preflight zahtjev — vracamo 204 odmah
+		// Preflight zahtev — vracamo 204 odmah
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
 			return
@@ -47,10 +47,10 @@ func corsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// jwtMiddleware provjerava JWT token za zaštićene rute
+// jwtMiddleware proverava JWT token za zaštićene rute
 func jwtMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Javne rute propuštamo bez provjere tokena
+		// Javne rute propuštamo bez provere tokena
 		if isPublicPath(r.URL.Path) {
 			next.ServeHTTP(w, r)
 			return
@@ -64,7 +64,7 @@ func jwtMiddleware(next http.Handler) http.Handler {
 
 		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
 		token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
-			// Provjeravamo da li je algoritam potpisivanja HMAC
+			// Proveravamo da li je algoritam potpisivanja HMAC
 			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, jwt.ErrSignatureInvalid
 			}
@@ -80,7 +80,7 @@ func jwtMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// newReverseProxy kreira reverse proxy koji uklanja /api prefix prije prosljeđivanja
+// newReverseProxy kreira reverse proxy koji uklanja /api prefiks pre prosleđivanja
 // npr. /api/auth/register -> /auth/register na ciljnom servisu
 func newReverseProxy(target string) http.Handler {
 	targetURL, err := url.Parse(target)
@@ -94,7 +94,7 @@ func newReverseProxy(target string) http.Handler {
 	proxy.Director = func(req *http.Request) {
 		originalDirector(req)
 
-		// Uklanjamo /api prefix kako bi servis dobio svoju nativnu putanju
+		// Uklanjamo /api prefiks kako bi servis dobio svoju nativnu putanju
 		// /api/auth/register -> /auth/register
 		req.URL.Path = strings.TrimPrefix(req.URL.Path, "/api")
 		if req.URL.RawPath != "" {
@@ -104,7 +104,7 @@ func newReverseProxy(target string) http.Handler {
 		req.Host = targetURL.Host
 	}
 
-	// Greška pri prosljeđivanju zahtjeva — servis nije dostupan
+	// Greška pri prosleđivanju zahteva — servis nije dostupan
 	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
 		log.Printf("Greška proxy-ja za %s: %v", r.URL.Path, err)
 		http.Error(w, `{"error":"Servis nije dostupan"}`, http.StatusBadGateway)
@@ -144,7 +144,7 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	// Rutiranje zahtjeva ka odgovarajucim servisima
+	// Rutiranje zahteva ka odgovarajucim servisima
 	mux.Handle("/api/auth", newReverseProxy(authServiceURL))
 	mux.Handle("/api/auth/", newReverseProxy(authServiceURL))
 	mux.Handle("/api/blogs", newReverseProxy(blogServiceURL))
@@ -154,14 +154,14 @@ func main() {
 	mux.Handle("/api/stakeholders", newReverseProxy(stakeholdersServiceURL))
 	mux.Handle("/api/stakeholders/", newReverseProxy(stakeholdersServiceURL))
 
-	// Health check endpoint za provjeru stanja gateway-a
+	// Health check endpoint za proveru stanja gateway-a
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"status":"ok","service":"api-gateway"}`))
 	})
 
-	// Primjenjujemo middleware: prvo CORS, pa JWT provjera
+	// Primenjujemo middleware: prvo CORS, pa JWT provera
 	handler := corsMiddleware(jwtMiddleware(mux))
 
 	port := os.Getenv("PORT")

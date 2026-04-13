@@ -11,7 +11,7 @@
   <!-- Navigation -->
   <nav class="sidebar__nav">
     <a
-      *ngFor="let item of navItems"
+      *ngFor="let item of visibleNavItems"
       [routerLink]="item.route"
       routerLinkActive="sidebar__nav-item--active"
       [routerLinkActiveOptions]="{ exact: item.exact }"
