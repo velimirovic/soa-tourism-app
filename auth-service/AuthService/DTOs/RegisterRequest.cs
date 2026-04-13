@@ -16,7 +16,7 @@ public class RegisterRequest
     [MinLength(6)]
     public string Password { get; set; } = string.Empty;
 
-    /// <summary>Allowed values: Tourist, Guide</summary>
+    //Tourist, Guide
     [Required]
     public string Role { get; set; } = "Tourist";
 }
