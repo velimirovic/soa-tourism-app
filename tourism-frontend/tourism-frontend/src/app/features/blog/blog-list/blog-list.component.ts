@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { marked } from 'marked';
 import { BlogService, Blog } from '../../../core/services/blog.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { FollowersService } from '../../../core/services/followers.service';
 
 @Component({
   selector: 'app-blog-list',
@@ -14,6 +15,8 @@ export class BlogListComponent implements OnInit {
   blogs: Blog[] = [];
   loading = true;
   error = '';
+  mode: 'all' | 'feed' | 'mine' = 'all';
+  followingIds = new Set<string>();
 
   readonly PAGE_SIZE = 9;
   currentPage = 1;
@@ -22,14 +25,32 @@ export class BlogListComponent implements OnInit {
   constructor(
     private blogService: BlogService,
     private authService: AuthService,
+    private followersService: FollowersService,
     private router: Router,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
-    this.blogService.getBlogs().subscribe({
+    this.followersService.getFollowing().subscribe({
+      next: (list) => {
+        this.followingIds = new Set(list.map((u) => u.userId));
+        this.cdr.detectChanges();
+      }
+    });
+    this.loadBlogs();
+  }
+
+  loadBlogs(): void {
+    this.loading = true;
+    this.error = '';
+    const obs = this.mode === 'feed' ? this.blogService.getFeed()
+              : this.mode === 'mine' ? this.blogService.getMyBlogs()
+              : this.blogService.getBlogs();
+    obs.subscribe({
       next: (blogs) => {
-        this.blogs = blogs;
+        this.blogs = this.mode === 'all'
+          ? blogs.filter(b => b.authorId !== this.currentUserId)
+          : blogs;
         this.loading = false;
         this.cdr.detectChanges();
       },
@@ -39,6 +60,36 @@ export class BlogListComponent implements OnInit {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  switchMode(mode: 'all' | 'feed' | 'mine'): void {
+    if (this.mode === mode) return;
+    this.mode = mode;
+    this.currentPage = 1;
+    this.loadBlogs();
+  }
+
+  isFollowing(authorId: string): boolean {
+    return this.followingIds.has(authorId);
+  }
+
+  toggleFollow(event: Event, blog: Blog): void {
+    event.stopPropagation();
+    if (this.isFollowing(blog.authorId)) {
+      this.followersService.unfollow(blog.authorId).subscribe({
+        next: () => {
+          this.followingIds.delete(blog.authorId);
+          this.cdr.detectChanges();
+        }
+      });
+    } else {
+      this.followersService.follow(blog.authorId, blog.authorUsername).subscribe({
+        next: () => {
+          this.followingIds.add(blog.authorId);
+          this.cdr.detectChanges();
+        }
+      });
+    }
   }
 
   get currentUserId(): string {
