@@ -12,6 +12,13 @@ export interface UserDto {
   createdAt: string;
 }
 
+export interface PublicUserDto {
+  id: string;
+  username: string;
+  role: string;
+  profilePicture?: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AdminService {
 
@@ -21,6 +28,10 @@ export class AdminService {
 
   getAllUsers(): Observable<UserDto[]> {
     return this.http.get<UserDto[]>(`${this.base}/users`);
+  }
+
+  getDiscoverUsers(): Observable<PublicUserDto[]> {
+    return this.http.get<PublicUserDto[]>(`${this.base}/users/discover`);
   }
 
   toggleBlock(userId: number): Observable<UserDto> {

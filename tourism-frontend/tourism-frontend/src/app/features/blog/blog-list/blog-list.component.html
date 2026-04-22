@@ -5,10 +5,38 @@
       <span class="material-icons">article</span>
       Blogs
     </h1>
-    <button class="btn btn--primary" (click)="createBlog()">
-      <span class="material-icons">edit</span>
-      Write a Blog
-    </button>
+    <div class="blog-list__header-actions">
+      <div class="blog-list__mode-toggle">
+        <button
+          class="toggle-btn"
+          [class.toggle-btn--active]="mode === 'mine'"
+          (click)="switchMode('mine')"
+        >
+          <span class="material-icons">person</span>
+          My Blogs
+        </button>
+        <button
+          class="toggle-btn"
+          [class.toggle-btn--active]="mode === 'feed'"
+          (click)="switchMode('feed')"
+        >
+          <span class="material-icons">dynamic_feed</span>
+          Following
+        </button>
+        <button
+          class="toggle-btn"
+          [class.toggle-btn--active]="mode === 'all'"
+          (click)="switchMode('all')"
+        >
+          <span class="material-icons">public</span>
+          All
+        </button>
+      </div>
+      <button class="btn btn--primary" (click)="createBlog()">
+        <span class="material-icons">edit</span>
+        Write a Blog
+      </button>
+    </div>
   </div>
 
   <div *ngIf="loading" class="blog-list__state">
@@ -72,6 +100,18 @@
           </button>
           <button class="icon-btn icon-btn--danger" (click)="requestDeleteBlog($event, blog)" title="Delete">
             <span class="material-icons">delete</span>
+          </button>
+        </div>
+
+        <!-- Follow/Unfollow author -->
+        <div *ngIf="blog.authorId !== currentUserId" class="blog-card__actions">
+          <button
+            class="icon-btn"
+            [class.icon-btn--active]="isFollowing(blog.authorId)"
+            [title]="isFollowing(blog.authorId) ? 'Unfollow' : 'Follow'"
+            (click)="toggleFollow($event, blog)"
+          >
+            <span class="material-icons">{{ isFollowing(blog.authorId) ? 'person_remove' : 'person_add' }}</span>
           </button>
         </div>
       </div>

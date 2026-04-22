@@ -12,6 +12,7 @@ import { AuthGuard }           from './core/guards/auth.guard';
 import { UserListComponent }  from './features/admin/user-list/user-list.component';
 import { AdminGuard }         from './core/guards/admin.guard';
 import { ProfileComponent } from './features/profile/profile.component';
+import { PeopleComponent }   from './features/people/people.component';
 
 const routes: Routes = [
   // Auth pages (standalone, no shell)
@@ -31,7 +32,9 @@ const routes: Routes = [
       { path: 'blogs/new',      component: BlogCreateComponent, canActivate: [AuthGuard] },
       { path: 'blogs/:id/edit', component: BlogCreateComponent, canActivate: [AuthGuard] },
       { path: 'blogs/:id',      component: BlogDetailComponent, canActivate: [AuthGuard] },
-      { path: 'profile', component: ProfileComponent, canActivate: [AuthGuard] },
+      { path: 'profile',          component: ProfileComponent, canActivate: [AuthGuard] },
+      { path: 'profile/:userId', component: ProfileComponent, canActivate: [AuthGuard] },
+      { path: 'people',  component: PeopleComponent,  canActivate: [AuthGuard] },
       { path: 'admin/users',   component: UserListComponent, canActivate: [AdminGuard] }
     ]
   },

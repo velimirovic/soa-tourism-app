@@ -1,7 +1,9 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { NgForm } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { ProfileService, UserProfile, UpdateProfileDto } from '../../core/services/profile.service';
+import { FollowersService } from '../../core/services/followers.service';
 
 @Component({
   selector: 'app-profile',
@@ -17,6 +19,13 @@ export class ProfileComponent implements OnInit {
   errorMsg = '';
   successMsg = '';
 
+  isOwnProfile = true;
+  viewedUserId = '';
+  viewedUsername = '';
+  viewedRole = '';
+  followed = false;
+  followLoading = false;
+
   model: UpdateProfileDto = {
     firstName: '',
     lastName: '',
@@ -28,25 +37,43 @@ export class ProfileComponent implements OnInit {
   constructor(
     private authService: AuthService,
     private profileService: ProfileService,
+    private followersService: FollowersService,
+    private route: ActivatedRoute,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
-    const user = this.authService.getUser();
-    if (!user) return;
+    this.route.paramMap.subscribe(params => {
+      const routeUserId = params.get('userId');
+      const myUser = this.authService.getUser();
 
+      if (routeUserId && routeUserId !== String(myUser?.id)) {
+        this.isOwnProfile = false;
+        this.viewedUserId = routeUserId;
+        this.viewedUsername = this.route.snapshot.queryParamMap.get('username') ?? '';
+        this.viewedRole = this.route.snapshot.queryParamMap.get('role') ?? '';
+        this.loadProfile(Number(routeUserId));
+        this.checkFollowStatus(routeUserId);
+      } else {
+        this.isOwnProfile = true;
+        if (!myUser) return;
+        this.loadProfile(myUser.id);
+      }
+    });
+  }
+
+  private loadProfile(userId: number): void {
     this.loading = true;
-    this.profileService.getProfile(user.id).subscribe({
+    this.profileService.getProfile(userId).subscribe({
       next: p => {
         this.profile = p;
-        this.syncModel(p);
+        if (this.isOwnProfile) this.syncModel(p);
         this.loading = false;
         this.cdr.detectChanges();
       },
       error: err => {
-        // Profil možda još ne postoji — dozvoljavamo edit
         if (err.status === 404) {
-          this.editMode = true;
+          if (this.isOwnProfile) this.editMode = true;
         } else {
           this.errorMsg = 'Failed to load profile.';
         }
@@ -56,8 +83,41 @@ export class ProfileComponent implements OnInit {
     });
   }
 
-  get user() {
-    return this.authService.getUser();
+  private checkFollowStatus(userId: string): void {
+    this.followersService.getFollowing().subscribe({
+      next: list => {
+        this.followed = list.some(u => u.userId === userId);
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  toggleFollow(): void {
+    if (this.followLoading) return;
+    this.followLoading = true;
+
+    const action = this.followed
+      ? this.followersService.unfollow(this.viewedUserId)
+      : this.followersService.follow(this.viewedUserId, this.viewedUsername);
+
+    action.subscribe({
+      next: () => {
+        this.followed = !this.followed;
+        this.followLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => { this.followLoading = false; this.cdr.detectChanges(); }
+    });
+  }
+
+  get user() { return this.authService.getUser(); }
+
+  get displayUsername(): string {
+    return this.isOwnProfile ? (this.user?.username ?? '') : this.viewedUsername;
+  }
+
+  get displayRole(): string {
+    return this.isOwnProfile ? (this.user?.role ?? '') : this.viewedRole;
   }
 
   enterEdit(): void {
@@ -108,16 +168,14 @@ export class ProfileComponent implements OnInit {
   }
 
   onFileSelected(event: Event): void {
-  const input = event.target as HTMLInputElement;
-  if (!input.files?.length) return;
-
-  const file = input.files[0];
-  const reader = new FileReader();
-  reader.onload = () => {
-    this.model.profilePicture = reader.result as string;
-    this.cdr.detectChanges();
-  };
-  reader.readAsDataURL(file);
-}
-
+    const input = event.target as HTMLInputElement;
+    if (!input.files?.length) return;
+    const file = input.files[0];
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.model.profilePicture = reader.result as string;
+      this.cdr.detectChanges();
+    };
+    reader.readAsDataURL(file);
+  }
 }

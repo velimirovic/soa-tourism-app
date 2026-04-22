@@ -9,3 +9,5 @@ public class UserDto
     public bool IsBlocked { get; set; }
     public DateTime CreatedAt { get; set; }
 }
+
+public record PublicUserDto(string Id, string Username, string Role, string? ProfilePicture);
