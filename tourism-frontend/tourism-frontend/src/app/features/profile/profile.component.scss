@@ -98,9 +98,21 @@
 
     .material-icons { font-size: 18px !important; }
 
-    &:hover {
+    &:hover:not(:disabled) {
       background: #a855f7;
       color: #fff;
+    }
+
+    &:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    &--following {
+      background: #a855f7;
+      color: #fff;
+
+      &:hover:not(:disabled) {
+        background: transparent;
+        color: #a855f7;
+      }
     }
   }
 }

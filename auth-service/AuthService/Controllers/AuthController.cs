@@ -104,6 +104,20 @@ public class AuthController : ControllerBase
         });
     }
 
+    // GET /auth/users/public  — dostupno svim ulogovanim korisnicima, vraca samo javne podatke
+    [HttpGet("users/public")]
+    [Authorize]
+    public async Task<IActionResult> GetPublicUsers()
+    {
+        var users = await _db.Users
+            .Where(u => u.Role != "Admin" && !u.IsBlocked)
+            .OrderBy(u => u.Username)
+            .Select(u => new { id = u.Id.ToString(), username = u.Username, role = u.Role })
+            .ToListAsync();
+
+        return Ok(users);
+    }
+
     // GET /auth/users
     [HttpGet("users")]
     [Authorize(Roles = "Admin")]

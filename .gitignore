@@ -20,6 +20,9 @@
 # Docker
 **/.dockerignore
 
+# Local seed script (test data, not for version control)
+seed.js
+
 # IDEs and Editors
 .vs/
 .vscode/

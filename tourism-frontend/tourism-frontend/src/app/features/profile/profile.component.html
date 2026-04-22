@@ -29,16 +29,25 @@
             No name set
         </span>
         </h1>
-        <span class="profile-header__username">@{{ user?.username }}</span>
-        <span class="profile-header__role profile-header__role--{{ user?.role?.toLowerCase() }}">
-          <span class="material-icons">{{ user?.role === 'Guide' ? 'record_voice_over' : 'hiking' }}</span>
-          {{ user?.role }}
+        <span class="profile-header__username">@{{ displayUsername }}</span>
+        <span class="profile-header__role profile-header__role--{{ displayRole.toLowerCase() }}">
+          <span class="material-icons">{{ displayRole === 'Guide' ? 'record_voice_over' : 'hiking' }}</span>
+          {{ displayRole }}
         </span>
       </div>
 
-      <button *ngIf="!editMode" class="profile-header__edit-btn" (click)="enterEdit()">
+      <button *ngIf="isOwnProfile && !editMode" class="profile-header__edit-btn" (click)="enterEdit()">
         <span class="material-icons">edit</span>
         Edit Profile
+      </button>
+
+      <button *ngIf="!isOwnProfile && !followed" class="profile-header__edit-btn" (click)="toggleFollow()" [disabled]="followLoading">
+        <span class="material-icons">person_add</span>
+        Follow
+      </button>
+      <button *ngIf="!isOwnProfile && followed" class="profile-header__edit-btn profile-header__edit-btn--following" (click)="toggleFollow()" [disabled]="followLoading">
+        <span class="material-icons">how_to_reg</span>
+        Following
       </button>
     </div>
 
@@ -54,8 +63,14 @@
       {{ errorMsg }}
     </div>
 
+    <!-- Empty state for other user with no profile -->
+    <div *ngIf="!isOwnProfile && !profile && !editMode" class="profile-card profile-card--empty">
+      <span class="material-icons" style="font-size:40px;color:#d8b4fe;margin-bottom:8px">person_outline</span>
+      <p style="color:#aaa;font-size:14px;margin:0">This user hasn't set up their profile yet.</p>
+    </div>
+
     <!-- View mode -->
-    <div *ngIf="!editMode" class="profile-card">
+    <div *ngIf="!editMode && (profile || isOwnProfile)" class="profile-card">
       <div class="profile-field">
         <span class="profile-field__label">
           <span class="material-icons">person</span> First Name
@@ -89,8 +104,8 @@
       </div>
     </div>
 
-    <!-- Edit mode -->
-    <div *ngIf="editMode" class="profile-card">
+    <!-- Edit mode (only own profile) -->
+    <div *ngIf="isOwnProfile && editMode" class="profile-card">
       <form #profileForm="ngForm" (ngSubmit)="onSubmit(profileForm)" novalidate>
 
         <div class="form-row">

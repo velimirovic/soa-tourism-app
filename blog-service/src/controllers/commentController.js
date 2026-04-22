@@ -1,9 +1,26 @@
 const Blog = require('../models/Blog');
 
+const FOLLOWERS_URL = process.env.FOLLOWERS_SERVICE_URL || 'http://localhost:8084';
+
 const addComment = async (req, res) => {
   try {
     const blog = await Blog.findById(req.params.id);
     if (!blog) return res.status(404).json({ message: 'Blog not found' });
+
+    if (blog.authorId !== req.user.id) {
+      const authHeader = req.headers['authorization'];
+      const checkRes = await fetch(
+        `${FOLLOWERS_URL}/followers/is-following/${blog.authorId}`,
+        { headers: { Authorization: authHeader } }
+      );
+      if (!checkRes.ok) {
+        return res.status(503).json({ message: 'Followers service unavailable' });
+      }
+      const { isFollowing } = await checkRes.json();
+      if (!isFollowing) {
+        return res.status(403).json({ message: 'You must follow the author to comment' });
+      }
+    }
 
     const comment = {
       userId: req.user.id,
