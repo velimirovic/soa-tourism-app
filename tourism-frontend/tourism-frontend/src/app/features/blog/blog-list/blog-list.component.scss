@@ -6,6 +6,24 @@
     align-items: center;
     justify-content: space-between;
     margin-bottom: 28px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  &__header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  &__mode-toggle {
+    display: flex;
+    align-items: center;
+    background: #f4effd;
+    border-radius: 22px;
+    padding: 3px;
+    gap: 2px;
   }
 
   &__title {
@@ -172,6 +190,33 @@
 
   &:hover { color: #7c3aed; }
   &--danger:hover { color: #e05a5a; }
+  &--active { color: #a855f7; }
+}
+
+.toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border: none;
+  border-radius: 20px;
+  background: transparent;
+  color: #9c7ec7;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+
+  .material-icons { font-size: 15px; }
+
+  &:hover { background: rgba(168, 85, 247, 0.1); color: #7c3aed; }
+
+  &--active {
+    background: #a855f7;
+    color: #fff;
+
+    &:hover { background: #9333ea; opacity: 1; }
+  }
 }
 
 .page-btn {

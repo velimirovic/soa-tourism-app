@@ -1,0 +1,122 @@
+<div class="people-page">
+
+  <div class="people-page__header">
+    <h1><span class="material-icons">group</span> People</h1>
+  </div>
+
+  <div *ngIf="loading" class="people-page__state">
+    <span class="material-icons spinning">sync</span>
+    Loading...
+  </div>
+
+  <div *ngIf="!loading" class="people-page__sections">
+
+    <!-- Suggested -->
+    <section class="suggestions-section" *ngIf="recommendations.length > 0">
+      <div class="suggestions-section__header">
+        <h2 class="suggestions-section__title">
+          <span class="material-icons">recommend</span>
+          Suggested for you
+        </h2>
+        <button class="suggestions-section__see-all" (click)="showAllRec = !showAllRec">
+          {{ showAllRec ? 'Show less' : 'See all' }}
+        </button>
+      </div>
+      <div class="suggestions-track">
+        <div *ngFor="let user of visibleRecommendations" class="suggestion-card"
+             [routerLink]="['/profile', user.userId]" [queryParams]="{username: user.username, role: ''}">
+          <img *ngIf="profilePictureOf(user.userId)" [src]="profilePictureOf(user.userId)!" [alt]="user.username" class="suggestion-card__avatar suggestion-card__avatar--img" />
+          <div *ngIf="!profilePictureOf(user.userId)" class="suggestion-card__avatar" [style.background]="avatarColor(user.username)">
+            {{ initials(user.username) }}
+          </div>
+          <div class="suggestion-card__info">
+            <span class="suggestion-card__username">@{{ user.username }}</span>
+            <span class="suggestion-card__sub">
+              <span class="material-icons">people</span>
+              {{ user.score }} mutual
+            </span>
+          </div>
+          <button
+            *ngIf="!isFollowing(user.userId)"
+            class="suggestion-card__btn suggestion-card__btn--follow"
+            (click)="$event.stopPropagation(); follow(user)"
+          >Follow</button>
+          <button
+            *ngIf="isFollowing(user.userId)"
+            class="suggestion-card__btn suggestion-card__btn--following"
+            (click)="$event.stopPropagation(); unfollow({ userId: user.userId, username: user.username })"
+          >Following</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Discover People -->
+    <section class="suggestions-section" *ngIf="filteredDiscoverUsers.length > 0">
+      <div class="suggestions-section__header">
+        <h2 class="suggestions-section__title">
+          <span class="material-icons">explore</span>
+          Discover People
+        </h2>
+      </div>
+      <div class="suggestions-track">
+        <div *ngFor="let user of filteredDiscoverUsers" class="suggestion-card"
+             [routerLink]="['/profile', user.id]" [queryParams]="{username: user.username, role: user.role}">
+          <img
+            *ngIf="user.profilePicture"
+            [src]="user.profilePicture"
+            [alt]="user.username"
+            class="suggestion-card__avatar suggestion-card__avatar--img"
+          />
+          <div
+            *ngIf="!user.profilePicture"
+            class="suggestion-card__avatar"
+            [style.background]="avatarColor(user.username)"
+          >{{ initials(user.username) }}</div>
+          <div class="suggestion-card__info">
+            <span class="suggestion-card__username">@{{ user.username }}</span>
+            <span class="suggestion-card__sub suggestion-card__sub--role"
+              [ngClass]="'suggestion-card__sub--' + user.role.toLowerCase()">
+              {{ user.role }}
+            </span>
+          </div>
+          <button class="suggestion-card__btn suggestion-card__btn--follow"
+                  (click)="$event.stopPropagation(); follow(user)">
+            Follow
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Following -->
+    <section class="people-section">
+      <h2 class="people-section__title">
+        <span class="material-icons">how_to_reg</span>
+        Following
+        <span class="people-section__count">{{ following.length }}</span>
+      </h2>
+
+      <div *ngIf="following.length === 0" class="people-section__empty">
+        You are not following anyone yet.
+      </div>
+
+      <ul class="people-list">
+        <li *ngFor="let user of following" class="people-card people-card--clickable"
+            [routerLink]="['/profile', user.userId]" [queryParams]="{username: user.username}">
+          <img *ngIf="profilePictureOf(user.userId)" [src]="profilePictureOf(user.userId)!" [alt]="user.username" class="people-card__avatar people-card__avatar--img" />
+          <div *ngIf="!profilePictureOf(user.userId)" class="people-card__avatar" [style.background]="avatarColor(user.username)">
+            {{ initials(user.username) }}
+          </div>
+          <div class="people-card__info">
+            <span class="people-card__username">@{{ user.username }}</span>
+          </div>
+          <button class="btn btn--ghost btn--sm" (click)="$event.stopPropagation(); unfollow(user)">
+            <span class="material-icons">person_remove</span>
+            Unfollow
+          </button>
+        </li>
+      </ul>
+    </section>
+
+  </div>
+
+</div>

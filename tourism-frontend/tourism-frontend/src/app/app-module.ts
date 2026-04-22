@@ -26,6 +26,7 @@ import { UserListComponent } from './features/admin/user-list/user-list.componen
 
 //Profile
 import { ProfileComponent } from './features/profile/profile.component';
+import { PeopleComponent }  from './features/people/people.component';
 
 @NgModule({
   declarations: [
@@ -39,7 +40,8 @@ import { ProfileComponent } from './features/profile/profile.component';
     BlogCreateComponent,
     BlogDetailComponent,
     ProfileComponent,
-    UserListComponent
+    UserListComponent,
+    PeopleComponent
   ],
   imports: [
     BrowserModule,
