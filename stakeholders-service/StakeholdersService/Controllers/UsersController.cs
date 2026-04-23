@@ -41,8 +41,8 @@ public class UsersController : ControllerBase
         if (!response.IsSuccessStatusCode)
             return StatusCode((int)response.StatusCode);
 
-        var content = await response.Content.ReadAsStringAsync();
-        var authUsers = JsonSerializer.Deserialize<List<PublicUserFromAuth>>(content, _jsonOptions) ?? [];
+    var content = await response.Content.ReadAsStringAsync();
+    var authUsers = JsonSerializer.Deserialize<List<PublicUserFromAuth>>(content, _jsonOptions) ?? new List<PublicUserFromAuth>();
 
         var numericIds = authUsers
             .Select(u => long.TryParse(u.Id, out var n) ? n : (long?)null)
