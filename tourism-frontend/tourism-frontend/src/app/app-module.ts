@@ -28,6 +28,10 @@ import { UserListComponent } from './features/admin/user-list/user-list.componen
 import { ProfileComponent } from './features/profile/profile.component';
 import { PeopleComponent }  from './features/people/people.component';
 
+// Tours
+import { TourListComponent }   from './features/tours/tour-list/tour-list.component';
+import { CreateTourComponent } from './features/tours/create-tour/create-tour.component';
+
 @NgModule({
   declarations: [
     App,
@@ -41,7 +45,9 @@ import { PeopleComponent }  from './features/people/people.component';
     BlogDetailComponent,
     ProfileComponent,
     UserListComponent,
-    PeopleComponent
+    PeopleComponent,
+    TourListComponent,
+    CreateTourComponent
   ],
   imports: [
     BrowserModule,

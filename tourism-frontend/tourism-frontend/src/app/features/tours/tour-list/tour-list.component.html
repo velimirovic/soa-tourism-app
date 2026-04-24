@@ -1,0 +1,76 @@
+<div class="tour-list">
+
+  <div class="tour-list__header">
+    <div>
+      <h2 class="tour-list__title">My Tours</h2>
+      <p class="tour-list__subtitle">All tours you have created as an author.</p>
+    </div>
+    <button class="tour-list__create-btn" (click)="goCreate()">
+      <span class="material-icons">add_circle</span>
+      New Tour
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="tour-list__state">
+    <span class="material-icons tour-list__state-icon">hourglass_top</span>
+    Loading tours…
+  </div>
+
+  <div *ngIf="error" class="tour-list__state tour-list__state--error">
+    <span class="material-icons tour-list__state-icon">error</span>
+    {{ error }}
+  </div>
+
+  <div *ngIf="!loading && !error && tours.length === 0" class="tour-list__empty">
+    <span class="material-icons tour-list__empty-icon">map</span>
+    <p class="tour-list__empty-text">You have not created any tours yet.</p>
+    <button class="tour-list__create-btn" (click)="goCreate()">
+      <span class="material-icons">add</span>
+      Create your first tour
+    </button>
+  </div>
+
+  <div *ngIf="!loading && !error && tours.length > 0" class="tour-list__grid">
+
+    <div class="tour-card" *ngFor="let tour of tours">
+
+      <div class="tour-card__top">
+        <span
+          class="tour-card__difficulty tour-card__difficulty--{{ difficultyClass(tour.difficulty) }}"
+        >
+          <span class="material-icons">
+            {{ tour.difficulty === 'EASY' ? 'directions_walk' : tour.difficulty === 'MEDIUM' ? 'directions_bike' : 'terrain' }}
+          </span>
+          {{ tour.difficulty }}
+        </span>
+        <span class="tour-card__status">
+          <span class="material-icons">edit_note</span>
+          {{ tour.status }}
+        </span>
+      </div>
+
+      <h3 class="tour-card__name">{{ tour.name }}</h3>
+
+      <p class="tour-card__description">
+        {{ tour.description || 'No description provided.' }}
+      </p>
+
+      <div class="tour-card__tags" *ngIf="tour.tags && tour.tags.length > 0">
+        <span class="tour-card__tag" *ngFor="let tag of tour.tags">{{ tag }}</span>
+      </div>
+
+      <div class="tour-card__footer">
+        <span class="tour-card__price">
+          <span class="material-icons">payments</span>
+          {{ tour.price === 0 ? 'Free' : tour.price + ' RSD' }}
+        </span>
+        <span class="tour-card__date">
+          {{ tour.createdAt | date: 'dd.MM.yyyy' }}
+        </span>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
