@@ -147,6 +147,11 @@ func main() {
 		followersServiceURL = "http://followers-service:8084"
 	}
 
+	purchaseServiceURL := os.Getenv("PURCHASE_SERVICE_URL")
+	if purchaseServiceURL == "" {
+		purchaseServiceURL = "http://purchase-service:8080"
+	}
+
 	mux := http.NewServeMux()
 
 	// Rutiranje zahteva ka odgovarajucim servisima
@@ -160,6 +165,8 @@ func main() {
 	mux.Handle("/api/stakeholders/", newReverseProxy(stakeholdersServiceURL))
 	mux.Handle("/api/followers", newReverseProxy(followersServiceURL))
 	mux.Handle("/api/followers/", newReverseProxy(followersServiceURL))
+	mux.Handle("/api/purchases", newReverseProxy(purchaseServiceURL))
+	mux.Handle("/api/purchases/", newReverseProxy(purchaseServiceURL))
 
 	// Health check endpoint za proveru stanja gateway-a
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -182,6 +189,7 @@ func main() {
 	log.Printf("  /api/tours/*         -> %s", tourServiceURL)
 	log.Printf("  /api/stakeholders/*  -> %s", stakeholdersServiceURL)
 	log.Printf("  /api/followers/*     -> %s", followersServiceURL)
+	log.Printf("  /api/purchases/*     -> %s", purchaseServiceURL)
 
 	if err := http.ListenAndServe(":"+port, handler); err != nil {
 		log.Fatalf("Gateway se ugasio sa greškom: %v", err)
