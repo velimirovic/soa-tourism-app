@@ -111,6 +111,7 @@ services:
       DATABASE_USER: postgres
       DATABASE_PASSWORD: super
       DATABASE_NAME: tours
+      JWT_KEY: change-me-in-production-min32chars!!
     depends_on:
       - tour-db
 

@@ -1,0 +1,145 @@
+<div class="tour-create">
+
+  <div class="tour-create__header">
+    <button class="btn btn--ghost" (click)="cancel()">
+      <span class="material-icons">arrow_back</span>
+      Back
+    </button>
+    <h1 class="tour-create__title">
+      <span class="material-icons">map</span>
+      Create New Tour
+    </h1>
+  </div>
+
+  <div *ngIf="error" class="tour-create__error">
+    <span class="material-icons">error_outline</span>
+    {{ error }}
+  </div>
+
+  <div *ngIf="success" class="tour-create__success">
+    <span class="material-icons">check_circle</span>
+    Tour created successfully! Redirecting…
+  </div>
+
+  <div class="tour-create__form">
+
+    <div class="field">
+      <label class="field__label" for="tourName">Tour Name *</label>
+      <input
+        id="tourName"
+        class="field__input"
+        type="text"
+        placeholder="e.g. Mountain Adventure"
+        [(ngModel)]="name"
+        name="name"
+        maxlength="200"
+      />
+    </div>
+
+    <div class="field">
+      <label class="field__label" for="tourDesc">
+        Description
+        <span class="field__hint">(optional)</span>
+      </label>
+      <textarea
+        id="tourDesc"
+        class="field__textarea"
+        placeholder="Describe the tour route, highlights, and what to expect…"
+        [(ngModel)]="description"
+        name="description"
+        rows="5"
+      ></textarea>
+    </div>
+
+    <div class="field">
+      <label class="field__label">Difficulty *</label>
+      <div class="difficulty-group">
+        <label
+          *ngFor="let d of difficulties"
+          class="difficulty-option"
+          [class.difficulty-option--selected]="difficulty === d"
+        >
+          <input
+            type="radio"
+            [value]="d"
+            [(ngModel)]="difficulty"
+            name="difficulty"
+            style="display:none"
+          />
+          <span class="material-icons difficulty-option__icon">
+            {{ d === 'EASY' ? 'directions_walk' : d === 'MEDIUM' ? 'directions_bike' : 'terrain' }}
+          </span>
+          <span class="difficulty-option__label">{{ d }}</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field__label" for="tourPrice">
+        Price
+        <span class="field__hint">(RSD — set to 0 for free)</span>
+      </label>
+      <div class="field__input-prefix-wrap">
+        <span class="field__prefix">
+          <span class="material-icons">payments</span>
+        </span>
+        <input
+          id="tourPrice"
+          class="field__input field__input--with-prefix"
+          type="number"
+          min="0"
+          step="1"
+          [(ngModel)]="price"
+          name="price"
+          placeholder="0"
+        />
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field__label" for="tagInput">
+        Tags
+        <span class="field__hint">(press Enter or comma to add)</span>
+      </label>
+      <div class="tag-input-row">
+        <input
+          id="tagInput"
+          class="field__input"
+          type="text"
+          [(ngModel)]="tagInput"
+          name="tagInput"
+          placeholder="e.g. nature, hiking, family"
+          (keydown)="onTagInputKeydown($event)"
+        />
+        <button type="button" class="btn btn--tag-add" (click)="addTag()">
+          <span class="material-icons">add</span>
+        </button>
+      </div>
+      <div class="tag-chips" *ngIf="tags.length > 0">
+        <span class="tag-chip" *ngFor="let tag of tags">
+          {{ tag }}
+          <button type="button" class="tag-chip__remove" (click)="removeTag(tag)" title="Remove">
+            <span class="material-icons">close</span>
+          </button>
+        </span>
+      </div>
+    </div>
+
+    <div class="tour-create__actions">
+      <button type="button" class="btn btn--ghost" (click)="cancel()" [disabled]="submitting">
+        Cancel
+      </button>
+      <button
+        type="button"
+        class="btn btn--primary"
+        (click)="submit()"
+        [disabled]="submitting"
+      >
+        <span class="material-icons">{{ submitting ? 'hourglass_top' : 'add_circle' }}</span>
+        {{ submitting ? 'Creating…' : 'Create Tour' }}
+      </button>
+    </div>
+
+  </div>
+
+</div>

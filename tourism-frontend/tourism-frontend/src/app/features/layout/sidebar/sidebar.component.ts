@@ -15,7 +15,7 @@ export class SidebarComponent {
     { label: 'Blogs',    icon: 'article',        route: '/blogs',   exact: false, requiresAuth: true  },
     { label: 'People',   icon: 'group',          route: '/people',  exact: false, requiresAuth: true  },
     { label: 'Guides',   icon: 'person',         route: '/guides',  exact: false, requiresAuth: false },
-    { label: 'Tours',    icon: 'map',            route: '/tours',   exact: false, requiresAuth: false },
+    { label: 'Tours',    icon: 'map',            route: '/tours/my', exact: false, requiresAuth: true  },
     { label: 'Me',       icon: 'account_circle', route: '/profile', exact: false, requiresAuth: true  },
   ];
 
