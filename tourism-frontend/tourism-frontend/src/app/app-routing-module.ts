@@ -13,13 +13,13 @@ import { UserListComponent }  from './features/admin/user-list/user-list.compone
 import { AdminGuard }         from './core/guards/admin.guard';
 import { ProfileComponent } from './features/profile/profile.component';
 import { PeopleComponent }   from './features/people/people.component';
+import { TourListComponent }   from './features/tours/tour-list/tour-list.component';
+import { CreateTourComponent } from './features/tours/create-tour/create-tour.component';
 
 const routes: Routes = [
-  // Auth pages (standalone, no shell)
   { path: 'login',    component: LoginComponent },
   { path: 'register', component: RegisterComponent },
 
-  // Shell
   {
     path: '',
     component: ShellComponent,
@@ -27,7 +27,6 @@ const routes: Routes = [
       { path: '',       redirectTo: 'home', pathMatch: 'full' },
       { path: 'home',   component: HomeComponent },
 
-      // Blog routes — require login
       { path: 'blogs',          component: BlogListComponent,   canActivate: [AuthGuard] },
       { path: 'blogs/new',      component: BlogCreateComponent, canActivate: [AuthGuard] },
       { path: 'blogs/:id/edit', component: BlogCreateComponent, canActivate: [AuthGuard] },
@@ -35,11 +34,12 @@ const routes: Routes = [
       { path: 'profile',          component: ProfileComponent, canActivate: [AuthGuard] },
       { path: 'profile/:userId', component: ProfileComponent, canActivate: [AuthGuard] },
       { path: 'people',  component: PeopleComponent,  canActivate: [AuthGuard] },
-      { path: 'admin/users',   component: UserListComponent, canActivate: [AdminGuard] }
+      { path: 'admin/users',   component: UserListComponent, canActivate: [AdminGuard] },
+      { path: 'tours/my',     component: TourListComponent,   canActivate: [AuthGuard] },
+      { path: 'tours/create', component: CreateTourComponent, canActivate: [AuthGuard] }
     ]
   },
 
-  // Fallback
   { path: '**', redirectTo: 'home' }
 ];
 
