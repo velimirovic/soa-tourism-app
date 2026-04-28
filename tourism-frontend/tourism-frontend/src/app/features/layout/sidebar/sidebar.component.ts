@@ -10,32 +10,31 @@ import { AuthService } from '../../../core/services/auth.service';
 })
 export class SidebarComponent {
 
-  navItems = [
-    { label: 'Home',     icon: 'home',           route: '/home',    exact: true,  requiresAuth: false },
-    { label: 'Blogs',    icon: 'article',        route: '/blogs',   exact: false, requiresAuth: true  },
-    { label: 'People',   icon: 'group',          route: '/people',  exact: false, requiresAuth: true  },
-    { label: 'Guides',   icon: 'person',         route: '/guides',  exact: false, requiresAuth: false },
-    { label: 'Tours',    icon: 'map',            route: '/tours/my', exact: false, requiresAuth: true  },
-    { label: 'Me',       icon: 'account_circle', route: '/profile', exact: false, requiresAuth: true  },
-  ];
+  constructor(private authService: AuthService, private router: Router) {}
 
   get isAdmin(): boolean {
-    const user = this.authService.getUser();
-    return user?.role === 'Admin';
+    return this.authService.getUser()?.role === 'Admin';
   }
 
-  constructor(private authService: AuthService, private router: Router) {}
+  get isGuide(): boolean {
+    return this.authService.getUser()?.role === 'Guide';
+  }
+
+  get isTourist(): boolean {
+    return this.authService.getUser()?.role === 'Tourist';
+  }
 
   get isLoggedIn(): boolean {
     return this.authService.isLoggedIn();
   }
 
-  get visibleNavItems() {
-    return this.navItems.filter(item => !item.requiresAuth || this.isLoggedIn);
-  }
-
   get user() {
     return this.authService.getUser();
+  }
+
+  /** Tours route depends on role: Guide → /tours/my, Tourist → /tours */
+  get toursRoute(): string {
+    return this.isGuide ? '/tours/my' : '/tours';
   }
 
   logout(): void {

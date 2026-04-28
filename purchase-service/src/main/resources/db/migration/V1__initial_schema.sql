@@ -1,0 +1,12 @@
+-- ============================================================
+-- V1 — Početna šema purchase-service baze
+--
+-- Servis je u fazi razvoja — tabele još nisu definirane.
+-- Ovaj fajl inicijalizuje Flyway historiju (flyway_schema_history)
+-- na svježoj bazi. Kad se doda prva entitet, šema ide u V2__...
+--
+-- NIKAD ne mijenjaj ovaj fajl nakon prvog deploya.
+-- ============================================================
+
+-- Placeholder: nema tabela za sada.
+-- Dodaj V2__create_purchases.sql kada budeš kreirao Purchase entitet.

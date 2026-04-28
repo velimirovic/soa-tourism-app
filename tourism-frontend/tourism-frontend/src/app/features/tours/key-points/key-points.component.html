@@ -1,0 +1,129 @@
+<div class="kp-page">
+
+  <!-- Header -->
+  <div class="kp-header">
+    <button class="kp-back-btn" (click)="goBack()">
+      <span class="material-icons">arrow_back</span>
+    </button>
+    <div>
+      <h2 class="kp-title">
+        <span class="material-icons">place</span>
+        Key Points
+      </h2>
+      <p class="kp-subtitle">Click on the map to pin a location, then fill in the details.</p>
+    </div>
+  </div>
+
+  <!-- Main layout -->
+  <div class="kp-layout">
+
+    <!-- Left panel: form + list -->
+    <div class="kp-panel">
+
+      <!-- Add form -->
+      <div class="kp-form-card">
+        <h3 class="kp-form-title">
+          <span class="material-icons">add_location</span>
+          Add Key Point
+        </h3>
+
+        <div class="kp-coords" *ngIf="latitude !== null">
+          <span class="material-icons">my_location</span>
+          {{ latitude }}, {{ longitude }}
+        </div>
+        <div class="kp-coords kp-coords--empty" *ngIf="latitude === null">
+          <span class="material-icons">touch_app</span>
+          Click on the map to pick a location
+        </div>
+
+        <div class="kp-field">
+          <label class="kp-label">Name *</label>
+          <input class="kp-input" [(ngModel)]="name" placeholder="e.g. National Museum" />
+        </div>
+
+        <div class="kp-field">
+          <label class="kp-label">Description</label>
+          <textarea class="kp-input kp-textarea" [(ngModel)]="description"
+            placeholder="Brief description of this location..." rows="3"></textarea>
+        </div>
+
+        <!-- Image upload via FileReader -->
+        <div class="kp-field">
+          <label class="kp-label">Image <span class="kp-optional">(optional)</span></label>
+
+          <div class="kp-img-preview" *ngIf="imageBase64">
+            <img [src]="imageBase64" class="kp-img-thumb" alt="Preview" />
+            <div class="kp-img-info">
+              <span class="kp-img-name">{{ imageFileName }}</span>
+              <button class="kp-img-clear" type="button" (click)="clearImage()">
+                <span class="material-icons">delete</span>
+                Remove
+              </button>
+            </div>
+          </div>
+
+          <label class="kp-upload-label" *ngIf="!imageBase64">
+            <span class="material-icons">upload</span>
+            Choose image…
+            <input type="file" accept="image/*" (change)="onImageSelected($event)" class="kp-upload-input" />
+          </label>
+        </div>
+
+        <div class="kp-form-error" *ngIf="formError">
+          <span class="material-icons">error_outline</span>
+          {{ formError }}
+        </div>
+
+        <button class="kp-submit-btn" (click)="submit()" [disabled]="submitting">
+          <span class="material-icons">{{ submitting ? 'hourglass_top' : 'add_location_alt' }}</span>
+          {{ submitting ? 'Saving…' : 'Add Key Point' }}
+        </button>
+      </div>
+
+      <!-- Existing key points list -->
+      <div class="kp-list" *ngIf="!loading && keyPoints.length > 0">
+        <h3 class="kp-list-title">
+          <span class="material-icons">format_list_numbered</span>
+          {{ keyPoints.length }} Key Point{{ keyPoints.length !== 1 ? 's' : '' }}
+        </h3>
+
+        <div class="kp-item" *ngFor="let kp of keyPoints; let i = index">
+          <div class="kp-item__num">{{ i + 1 }}</div>
+          <div class="kp-item__body">
+            <div class="kp-item__name">{{ kp.name }}</div>
+            <div class="kp-item__desc" *ngIf="kp.description">{{ kp.description }}</div>
+            <div class="kp-item__coords">
+              <span class="material-icons">location_on</span>
+              {{ kp.latitude }}, {{ kp.longitude }}
+            </div>
+            <img *ngIf="kp.imageUrl" [src]="kp.imageUrl" class="kp-item__img" [alt]="kp.name" />
+          </div>
+          <button
+            class="kp-item__delete-btn"
+            (click)="deleteKeyPoint(kp.id)"
+            [disabled]="deletingId === kp.id"
+            title="Delete key point">
+            <span class="material-icons">{{ deletingId === kp.id ? 'hourglass_top' : 'delete_outline' }}</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="kp-empty" *ngIf="!loading && keyPoints.length === 0">
+        <span class="material-icons">explore_off</span>
+        No key points yet. Add one using the map!
+      </div>
+
+      <div class="kp-loading" *ngIf="loading">
+        <span class="material-icons spinning">sync</span>
+        Loading…
+      </div>
+
+    </div>
+
+    <!-- Right panel: map -->
+    <div class="kp-map-wrapper">
+      <div id="kp-map"></div>
+    </div>
+
+  </div>
+</div>

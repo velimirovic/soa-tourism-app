@@ -1,0 +1,69 @@
+<div class="tpl">
+
+  <div class="tpl__header">
+    <h2 class="tpl__title">
+      <span class="material-icons">explore</span>
+      Explore Tours
+    </h2>
+    <p class="tpl__subtitle">Discover all available tours and plan your next adventure.</p>
+  </div>
+
+  <div *ngIf="loading" class="tpl__state">
+    <span class="material-icons tpl__state-icon">hourglass_top</span>
+    Loading tours…
+  </div>
+
+  <div *ngIf="error" class="tpl__state tpl__state--error">
+    <span class="material-icons tpl__state-icon">error</span>
+    {{ error }}
+  </div>
+
+  <div *ngIf="!loading && !error && tours.length === 0" class="tpl__empty">
+    <span class="material-icons tpl__empty-icon">map</span>
+    <p class="tpl__empty-text">No tours available yet. Check back soon!</p>
+  </div>
+
+  <div *ngIf="!loading && !error && tours.length > 0" class="tpl__grid">
+
+    <div class="tc" *ngFor="let tour of tours">
+
+      <!-- Image banner -->
+      <div class="tc__image-wrap" *ngIf="tour.firstKeyPointImageUrl">
+        <img [src]="tour.firstKeyPointImageUrl" class="tc__image" [alt]="tour.name" />
+      </div>
+
+      <div class="tc__top" [class.tc__top--no-img]="!tour.firstKeyPointImageUrl">
+        <span class="tc__difficulty tc__difficulty--{{ difficultyClass(tour.difficulty) }}">
+          <span class="material-icons">
+            {{ tour.difficulty === 'EASY' ? 'directions_walk' : tour.difficulty === 'MEDIUM' ? 'directions_bike' : 'terrain' }}
+          </span>
+          {{ tour.difficulty }}
+        </span>
+        <span class="tc__price">
+          <span class="material-icons">payments</span>
+          {{ tour.price === 0 ? 'Free' : tour.price + ' RSD' }}
+        </span>
+      </div>
+
+      <h3 class="tc__name">{{ tour.name }}</h3>
+
+      <p class="tc__description">
+        {{ tour.description || 'No description provided.' }}
+      </p>
+
+      <div class="tc__tags" *ngIf="tour.tags && tour.tags.length > 0">
+        <span class="tc__tag" *ngFor="let tag of tour.tags">{{ tag }}</span>
+      </div>
+
+      <div class="tc__footer">
+        <span class="tc__date">
+          <span class="material-icons">calendar_today</span>
+          {{ tour.createdAt | date: 'dd.MM.yyyy' }}
+        </span>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
