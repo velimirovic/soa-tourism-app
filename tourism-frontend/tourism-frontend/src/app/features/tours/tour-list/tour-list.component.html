@@ -34,19 +34,34 @@
 
     <div class="tour-card" *ngFor="let tour of tours">
 
-      <div class="tour-card__top">
-        <span
-          class="tour-card__difficulty tour-card__difficulty--{{ difficultyClass(tour.difficulty) }}"
-        >
+      <!-- Image banner (only when first key-point has an image) -->
+      <div class="tour-card__image-wrap" *ngIf="tour.firstKeyPointImageUrl">
+        <img [src]="tour.firstKeyPointImageUrl" class="tour-card__image" [alt]="tour.name" />
+        <!-- Edit button overlaid on image -->
+        <button class="tour-card__edit-btn tour-card__edit-btn--overlay" (click)="openEdit(tour)" title="Edit tour">
+          <span class="material-icons">edit</span>
+        </button>
+      </div>
+
+      <!-- No-image header row -->
+      <div class="tour-card__top" [class.tour-card__top--no-img]="!tour.firstKeyPointImageUrl">
+        <span class="tour-card__difficulty tour-card__difficulty--{{ difficultyClass(tour.difficulty) }}">
           <span class="material-icons">
             {{ tour.difficulty === 'EASY' ? 'directions_walk' : tour.difficulty === 'MEDIUM' ? 'directions_bike' : 'terrain' }}
           </span>
           {{ tour.difficulty }}
         </span>
-        <span class="tour-card__status">
-          <span class="material-icons">edit_note</span>
-          {{ tour.status }}
-        </span>
+        <div class="tour-card__top-right">
+          <span class="tour-card__status">
+            <span class="material-icons">edit_note</span>
+            {{ tour.status }}
+          </span>
+          <!-- Edit button in top-right when no image -->
+          <button *ngIf="!tour.firstKeyPointImageUrl"
+            class="tour-card__edit-btn" (click)="openEdit(tour)" title="Edit tour">
+            <span class="material-icons">edit</span>
+          </button>
+        </div>
       </div>
 
       <h3 class="tour-card__name">{{ tour.name }}</h3>
@@ -64,13 +79,99 @@
           <span class="material-icons">payments</span>
           {{ tour.price === 0 ? 'Free' : tour.price + ' RSD' }}
         </span>
-        <span class="tour-card__date">
-          {{ tour.createdAt | date: 'dd.MM.yyyy' }}
-        </span>
+        <span class="tour-card__date">{{ tour.createdAt | date: 'dd.MM.yyyy' }}</span>
+        <button class="tour-card__kp-btn" (click)="goKeyPoints(tour.id)">
+          <span class="material-icons">place</span>
+          Key Points
+        </button>
       </div>
 
     </div>
 
   </div>
 
+</div>
+
+<!-- ── Edit Modal ────────────────────────────────────────────── -->
+<div class="modal-overlay" *ngIf="editingTour" (click)="closeEdit()">
+  <div class="modal" (click)="$event.stopPropagation()">
+
+    <div class="modal__header">
+      <h3 class="modal__title">
+        <span class="material-icons">edit</span>
+        Edit Tour
+      </h3>
+      <button class="modal__close" (click)="closeEdit()">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+
+    <div class="modal__body">
+
+      <div class="modal__field">
+        <label class="modal__label">Name *</label>
+        <input class="modal__input" [(ngModel)]="editName" placeholder="Tour name" />
+      </div>
+
+      <div class="modal__field">
+        <label class="modal__label">Description</label>
+        <textarea class="modal__input modal__textarea" [(ngModel)]="editDescription"
+          placeholder="Describe your tour…" rows="3"></textarea>
+      </div>
+
+      <div class="modal__field">
+        <label class="modal__label">Difficulty *</label>
+        <div class="modal__diff-group">
+          <button
+            *ngFor="let d of difficulties"
+            class="modal__diff-btn"
+            [class.modal__diff-btn--active]="editDifficulty === d"
+            [class.modal__diff-btn--easy]="d === 'EASY'"
+            [class.modal__diff-btn--medium]="d === 'MEDIUM'"
+            [class.modal__diff-btn--hard]="d === 'HARD'"
+            type="button"
+            (click)="editDifficulty = d">
+            {{ d }}
+          </button>
+        </div>
+      </div>
+
+      <div class="modal__field">
+        <label class="modal__label">Tags</label>
+        <div class="modal__tag-row">
+          <input
+            class="modal__input modal__tag-input"
+            [(ngModel)]="editTagInput"
+            (keydown)="onEditTagKeydown($event)"
+            placeholder="Type tag and press Enter or comma" />
+          <button class="modal__tag-add-btn" type="button" (click)="addEditTag()">
+            <span class="material-icons">add</span>
+          </button>
+        </div>
+        <div class="modal__tags" *ngIf="editTags.length > 0">
+          <span class="modal__tag" *ngFor="let t of editTags">
+            {{ t }}
+            <button class="modal__tag-remove" (click)="removeEditTag(t)">
+              <span class="material-icons">close</span>
+            </button>
+          </span>
+        </div>
+      </div>
+
+      <div class="modal__error" *ngIf="editError">
+        <span class="material-icons">error_outline</span>
+        {{ editError }}
+      </div>
+
+    </div>
+
+    <div class="modal__footer">
+      <button class="modal__cancel-btn" (click)="closeEdit()" [disabled]="editSaving">Cancel</button>
+      <button class="modal__save-btn" (click)="saveEdit()" [disabled]="editSaving">
+        <span class="material-icons">{{ editSaving ? 'hourglass_top' : 'save' }}</span>
+        {{ editSaving ? 'Saving…' : 'Save Changes' }}
+      </button>
+    </div>
+
+  </div>
 </div>

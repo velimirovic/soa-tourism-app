@@ -17,6 +17,7 @@ public class TourResponse {
     private BigDecimal price;
     private Long authorId;
     private LocalDateTime createdAt;
+    private String firstKeyPointImageUrl;
 
     public static TourResponse from(Tour tour) {
         TourResponse res = new TourResponse();
@@ -32,6 +33,12 @@ public class TourResponse {
         return res;
     }
 
+    public static TourResponse from(Tour tour, String firstKeyPointImageUrl) {
+        TourResponse res = from(tour);
+        res.firstKeyPointImageUrl = firstKeyPointImageUrl;
+        return res;
+    }
+
     public Long getId() { return id; }
     public String getName() { return name; }
     public String getDescription() { return description; }
@@ -41,4 +48,5 @@ public class TourResponse {
     public BigDecimal getPrice() { return price; }
     public Long getAuthorId() { return authorId; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public String getFirstKeyPointImageUrl() { return firstKeyPointImageUrl; }
 }
