@@ -10,32 +10,55 @@
 
   <!-- Navigation -->
   <nav class="sidebar__nav">
-    <a
-      *ngFor="let item of visibleNavItems"
-      [routerLink]="item.route"
-      routerLinkActive="sidebar__nav-item--active"
-      [routerLinkActiveOptions]="{ exact: item.exact }"
-      class="sidebar__nav-item"
-    >
-      <span class="material-icons sidebar__nav-icon">{{ item.icon }}</span>
-      <span class="sidebar__nav-label">{{ item.label }}</span>
+
+    <!-- Home — always visible -->
+    <a routerLink="/home" routerLinkActive="sidebar__nav-item--active"
+       [routerLinkActiveOptions]="{ exact: true }" class="sidebar__nav-item">
+      <span class="material-icons sidebar__nav-icon">home</span>
+      <span class="sidebar__nav-label">Home</span>
     </a>
 
-    <!-- Admin section — visible only to admins -->
+    <!-- Auth-required items -->
+    <ng-container *ngIf="isLoggedIn">
+      <a routerLink="/blogs" routerLinkActive="sidebar__nav-item--active" class="sidebar__nav-item">
+        <span class="material-icons sidebar__nav-icon">article</span>
+        <span class="sidebar__nav-label">Blogs</span>
+      </a>
+
+      <a routerLink="/people" routerLinkActive="sidebar__nav-item--active" class="sidebar__nav-item">
+        <span class="material-icons sidebar__nav-icon">group</span>
+        <span class="sidebar__nav-label">People</span>
+      </a>
+
+      <!-- Tours — Guide sees "My Tours" pointing to /tours/my; Tourist sees "Tours" pointing to /tours -->
+      <a
+        [routerLink]="toursRoute"
+        routerLinkActive="sidebar__nav-item--active"
+        class="sidebar__nav-item"
+      >
+        <span class="material-icons sidebar__nav-icon">map</span>
+        <span class="sidebar__nav-label">{{ isGuide ? 'My Tours' : 'Tours' }}</span>
+      </a>
+
+      <a routerLink="/profile" routerLinkActive="sidebar__nav-item--active" class="sidebar__nav-item">
+        <span class="material-icons sidebar__nav-icon">account_circle</span>
+        <span class="sidebar__nav-label">Me</span>
+      </a>
+    </ng-container>
+
+    <!-- Admin section -->
     <ng-container *ngIf="isAdmin">
       <div class="sidebar__divider"></div>
-      <a
-        routerLink="/admin/users"
-        routerLinkActive="sidebar__nav-item--active"
-        class="sidebar__nav-item sidebar__nav-item--admin"
-      >
+      <a routerLink="/admin/users" routerLinkActive="sidebar__nav-item--active"
+         class="sidebar__nav-item sidebar__nav-item--admin">
         <span class="material-icons sidebar__nav-icon">manage_accounts</span>
         <span class="sidebar__nav-label">Users</span>
       </a>
     </ng-container>
+
   </nav>
 
-  <!-- Footer: Login/Register ili Logout -->
+  <!-- Footer: Login/Register or Logout -->
   <div class="sidebar__footer">
 
     <ng-container *ngIf="!isLoggedIn; else loggedInFooter">
