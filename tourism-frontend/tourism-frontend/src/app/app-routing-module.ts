@@ -14,10 +14,12 @@ import { AdminGuard }          from './core/guards/admin.guard';
 import { GuideGuard }          from './core/guards/guide.guard';
 import { ProfileComponent }    from './features/profile/profile.component';
 import { PeopleComponent }     from './features/people/people.component';
-import { TourListComponent }       from './features/tours/tour-list/tour-list.component';
-import { CreateTourComponent }     from './features/tours/create-tour/create-tour.component';
-import { KeyPointsComponent }      from './features/tours/key-points/key-points.component';
-import { TourPublicListComponent } from './features/tours/tour-public-list/tour-public-list.component';
+import { TourListComponent }            from './features/tours/tour-list/tour-list.component';
+import { CreateTourComponent }          from './features/tours/create-tour/create-tour.component';
+import { KeyPointsComponent }           from './features/tours/key-points/key-points.component';
+import { TourPublicListComponent }      from './features/tours/tour-public-list/tour-public-list.component';
+import { TourDetailComponent }          from './features/tours/tour-detail/tour-detail.component';
+import { PositionSimulatorComponent }   from './features/position-simulator/position-simulator.component';
 
 const routes: Routes = [
   { path: 'login',    component: LoginComponent },
@@ -46,8 +48,12 @@ const routes: Routes = [
       { path: 'tours/create',        component: CreateTourComponent, canActivate: [AuthGuard, GuideGuard] },
       { path: 'tours/:id/keypoints', component: KeyPointsComponent,  canActivate: [AuthGuard, GuideGuard] },
 
-      // Tourist (and any authenticated user): public tour list
-      { path: 'tours', component: TourPublicListComponent, canActivate: [AuthGuard] },
+      // Tourist (and any authenticated user): public tour list + detail
+      { path: 'tours',            component: TourPublicListComponent,    canActivate: [AuthGuard] },
+      { path: 'tours/:id',        component: TourDetailComponent,        canActivate: [AuthGuard] },
+
+      // Position simulator (Tourist)
+      { path: 'simulator',        component: PositionSimulatorComponent, canActivate: [AuthGuard] },
     ]
   },
 
