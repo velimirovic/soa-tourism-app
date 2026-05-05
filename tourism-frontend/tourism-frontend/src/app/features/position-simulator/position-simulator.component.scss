@@ -1,0 +1,148 @@
+.sim-page {
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.sim-header {
+  margin-bottom: 24px;
+}
+
+.sim-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #2d2d4e;
+  margin: 0 0 4px;
+  .material-icons { color: #a855f7; font-size: 26px; }
+}
+
+.sim-subtitle {
+  font-size: 13px;
+  color: #888;
+  margin: 0;
+}
+
+.sim-layout {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 20px;
+  align-items: start;
+
+  @media (max-width: 780px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sim-map-wrap {
+  #sim-map {
+    height: 560px;
+    border-radius: 16px;
+    border: 1px solid #ede8f8;
+    overflow: hidden;
+    box-shadow: 0 2px 16px rgba(168, 85, 247, 0.08);
+  }
+}
+
+.sim-panel {
+  background: #fff;
+  border: 1px solid #ede8f8;
+  border-radius: 16px;
+  padding: 22px 20px;
+  position: sticky;
+  top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sim-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #aaa;
+  font-size: 13px;
+  .material-icons { font-size: 18px; }
+}
+
+.sim-coords {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #f4effd;
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: #7c3aed;
+
+  .material-icons { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+
+  &--empty {
+    background: #faf9ff;
+    color: #bbb;
+    font-size: 13px;
+    align-items: center;
+  }
+
+  &__label { font-size: 11.5px; font-weight: 600; color: #a855f7; margin-bottom: 2px; }
+  &__value { font-size: 13px; font-weight: 700; color: #2d2d4e; }
+}
+
+.sim-success {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: #d1fae5;
+  color: #065f46;
+  border-radius: 9px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  .material-icons { font-size: 18px; }
+}
+
+.sim-error {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #e05a5a;
+  font-size: 12.5px;
+  .material-icons { font-size: 16px; }
+}
+
+.sim-save-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  background: #a855f7;
+  color: #fff;
+  border: none;
+  border-radius: 22px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.2s;
+  width: 100%;
+
+  .material-icons { font-size: 18px; }
+  &:hover:not(:disabled) { opacity: 0.85; }
+  &:disabled { opacity: 0.55; cursor: not-allowed; }
+}
+
+.spinning { animation: spin 1s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+:host ::ng-deep .sim-position-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  .material-icons {
+    font-size: 40px;
+    color: #a855f7;
+    filter: drop-shadow(0 2px 6px rgba(168, 85, 247, 0.5));
+  }
+}

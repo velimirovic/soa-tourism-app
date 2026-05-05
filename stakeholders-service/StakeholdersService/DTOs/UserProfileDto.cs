@@ -6,7 +6,9 @@ public record UserProfileDto(
     string LastName,
     string? ProfilePicture,
     string? Biography,
-    string? Motto
+    string? Motto,
+    double? CurrentLatitude,
+    double? CurrentLongitude
 );
 
 public record UpdateProfileDto(
@@ -15,4 +17,9 @@ public record UpdateProfileDto(
     string? ProfilePicture,
     string? Biography,
     string? Motto
+);
+
+public record UpdatePositionDto(
+    double Latitude,
+    double Longitude
 );

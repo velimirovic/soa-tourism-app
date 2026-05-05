@@ -1,4 +1,5 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Router } from '@angular/router';
 import { TourService, TourDto } from '../../../core/services/tour.service';
 
 @Component({
@@ -15,6 +16,7 @@ export class TourPublicListComponent implements OnInit {
 
   constructor(
     private tourService: TourService,
+    private router: Router,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -35,5 +37,9 @@ export class TourPublicListComponent implements OnInit {
 
   difficultyClass(difficulty: string): string {
     return difficulty?.toLowerCase() ?? 'easy';
+  }
+
+  goToDetail(tourId: number): void {
+    this.router.navigate(['/tours', tourId]);
   }
 }

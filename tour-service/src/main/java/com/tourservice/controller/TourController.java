@@ -18,12 +18,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.tourservice.dto.CreateKeyPointRequest;
+import com.tourservice.dto.CreateReviewRequest;
 import com.tourservice.dto.CreateTourRequest;
 import com.tourservice.dto.KeyPointResponse;
+import com.tourservice.dto.ReviewResponse;
 import com.tourservice.dto.TourResponse;
 import com.tourservice.model.KeyPoint;
+import com.tourservice.model.Review;
 import com.tourservice.model.Tour;
 import com.tourservice.repository.KeyPointRepository;
+import com.tourservice.repository.ReviewRepository;
 import com.tourservice.repository.TourRepository;
 import com.tourservice.util.JwtUtil;
 
@@ -35,13 +39,16 @@ public class TourController {
 
     private final TourRepository tourRepository;
     private final KeyPointRepository keyPointRepository;
+    private final ReviewRepository reviewRepository;
     private final JwtUtil jwtUtil;
 
     public TourController(TourRepository tourRepository,
                           KeyPointRepository keyPointRepository,
+                          ReviewRepository reviewRepository,
                           JwtUtil jwtUtil) {
         this.tourRepository = tourRepository;
         this.keyPointRepository = keyPointRepository;
+        this.reviewRepository = reviewRepository;
         this.jwtUtil = jwtUtil;
     }
 
@@ -223,5 +230,107 @@ public class TourController {
 
         keyPointRepository.deleteById(keyPointId);
         return ResponseEntity.noContent().build();
+    }
+
+    // PUT /tours/{tourId}/keypoints/{keyPointId}
+    @PutMapping("/{tourId}/keypoints/{keyPointId}")
+    public ResponseEntity<?> updateKeyPoint(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long tourId,
+            @PathVariable Long keyPointId,
+            @Valid @RequestBody CreateKeyPointRequest req) {
+
+        Long authorId = jwtUtil.extractUserId(authHeader);
+        if (authorId == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+        }
+
+        boolean tourOwned = tourRepository.findById(tourId)
+                .map(t -> t.getAuthorId().equals(authorId))
+                .orElse(false);
+        if (!tourOwned) {
+            return ResponseEntity.status(403).body(Map.of("error", "Forbidden"));
+        }
+
+        return keyPointRepository.findById(keyPointId).map(kp -> {
+            kp.setName(req.getName());
+            kp.setDescription(req.getDescription());
+            kp.setImageUrl(req.getImageUrl());
+            kp.setLatitude(req.getLatitude());
+            kp.setLongitude(req.getLongitude());
+            return ResponseEntity.ok((Object) KeyPointResponse.from(keyPointRepository.save(kp)));
+        }).orElse(ResponseEntity.status(404).body(Map.of("error", "Key point not found")));
+    }
+
+    // GET /tours/{tourId}
+    @GetMapping("/{tourId}")
+    public ResponseEntity<?> getTour(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long tourId) {
+
+        Long userId = jwtUtil.extractUserId(authHeader);
+        if (userId == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+        }
+
+        return tourRepository.findById(tourId).map(tour -> {
+            String img = keyPointRepository.findByTourIdOrderById(tour.getId())
+                    .stream()
+                    .map(kp -> kp.getImageUrl())
+                    .filter(url -> url != null && !url.isBlank())
+                    .findFirst()
+                    .orElse(null);
+            return ResponseEntity.ok((Object) TourResponse.from(tour, img));
+        }).orElse(ResponseEntity.status(404).body(Map.of("error", "Tour not found")));
+    }
+
+    // POST /tours/{tourId}/reviews
+    @PostMapping("/{tourId}/reviews")
+    public ResponseEntity<?> addReview(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long tourId,
+            @Valid @RequestBody CreateReviewRequest req) {
+
+        Long touristId = jwtUtil.extractUserId(authHeader);
+        if (touristId == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+        }
+
+        if (!tourRepository.existsById(tourId)) {
+            return ResponseEntity.status(404).body(Map.of("error", "Tour not found"));
+        }
+
+        Review review = new Review();
+        review.setTourId(tourId);
+        review.setTouristId(touristId);
+        review.setTouristName(req.getTouristName());
+        review.setRating(req.getRating());
+        review.setComment(req.getComment());
+        review.setVisitDate(req.getVisitDate());
+        review.setCommentDate(java.time.LocalDateTime.now());
+        review.setImages(req.getImages() != null ? req.getImages() : List.of());
+
+        Review saved = reviewRepository.save(review);
+        return ResponseEntity.status(201).body(ReviewResponse.from(saved));
+    }
+
+    // GET /tours/{tourId}/reviews
+    @GetMapping("/{tourId}/reviews")
+    public ResponseEntity<?> getReviews(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long tourId) {
+
+        Long userId = jwtUtil.extractUserId(authHeader);
+        if (userId == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+        }
+
+        List<ReviewResponse> reviews = reviewRepository
+                .findByTourIdOrderByCommentDateDesc(tourId)
+                .stream()
+                .map(ReviewResponse::from)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(reviews);
     }
 }
