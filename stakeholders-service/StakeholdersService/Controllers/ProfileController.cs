@@ -25,14 +25,7 @@ public class ProfileController : ControllerBase
         if (profile is null)
             return NotFound($"Profile for user {userId} not found.");
 
-        return Ok(new UserProfileDto(
-            profile.UserId,
-            profile.FirstName,
-            profile.LastName,
-            profile.ProfilePicture,
-            profile.Biography,
-            profile.Motto
-        ));
+        return Ok(ToDto(profile));
     }
 
     // PUT /profile/{userId}
@@ -54,13 +47,36 @@ public class ProfileController : ControllerBase
         profile.Motto = dto.Motto;
 
         await _db.SaveChangesAsync();
-        return Ok(new UserProfileDto(
-            profile.UserId,
-            profile.FirstName,
-            profile.LastName,
-            profile.ProfilePicture,
-            profile.Biography,
-            profile.Motto
-        ));
+        return Ok(ToDto(profile));
     }
+
+    // PUT /profile/{userId}/position
+    [HttpPut("{userId:long}/position")]
+    public async Task<IActionResult> UpdatePosition(long userId, [FromBody] UpdatePositionDto dto)
+    {
+        var profile = await _db.UserProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
+
+        if (profile is null)
+        {
+            profile = new UserProfile { UserId = userId, FirstName = "", LastName = "" };
+            _db.UserProfiles.Add(profile);
+        }
+
+        profile.CurrentLatitude = dto.Latitude;
+        profile.CurrentLongitude = dto.Longitude;
+
+        await _db.SaveChangesAsync();
+        return Ok(ToDto(profile));
+    }
+
+    private static UserProfileDto ToDto(UserProfile p) => new(
+        p.UserId,
+        p.FirstName,
+        p.LastName,
+        p.ProfilePicture,
+        p.Biography,
+        p.Motto,
+        p.CurrentLatitude,
+        p.CurrentLongitude
+    );
 }

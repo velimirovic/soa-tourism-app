@@ -1,0 +1,62 @@
+<div class="sim-page">
+
+  <div class="sim-header">
+    <h2 class="sim-title">
+      <span class="material-icons">location_searching</span>
+      Position Simulator
+    </h2>
+    <p class="sim-subtitle">Click anywhere on the map to set your current location, then save it.</p>
+  </div>
+
+  <div class="sim-layout">
+
+    <!-- Map -->
+    <div class="sim-map-wrap">
+      <div id="sim-map"></div>
+    </div>
+
+    <!-- Panel -->
+    <div class="sim-panel">
+
+      <div class="sim-loading" *ngIf="loading">
+        <span class="material-icons spinning">sync</span> Loading current position…
+      </div>
+
+      <ng-container *ngIf="!loading">
+
+        <div class="sim-coords" *ngIf="latitude !== null">
+          <div class="sim-coords__row">
+            <span class="material-icons">near_me</span>
+            <div>
+              <div class="sim-coords__label">Selected Position</div>
+              <div class="sim-coords__value">{{ latitude }}, {{ longitude }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sim-coords sim-coords--empty" *ngIf="latitude === null">
+          <span class="material-icons">touch_app</span>
+          Click on the map to set your position
+        </div>
+
+        <div class="sim-success" *ngIf="saved">
+          <span class="material-icons">check_circle</span>
+          Position saved successfully!
+        </div>
+
+        <div class="sim-error" *ngIf="error">
+          <span class="material-icons">error_outline</span> {{ error }}
+        </div>
+
+        <button class="sim-save-btn"
+          (click)="savePosition()"
+          [disabled]="latitude === null || saving">
+          <span class="material-icons">{{ saving ? 'hourglass_top' : 'save_alt' }}</span>
+          {{ saving ? 'Saving…' : 'Save My Position' }}
+        </button>
+
+      </ng-container>
+    </div>
+
+  </div>
+</div>
