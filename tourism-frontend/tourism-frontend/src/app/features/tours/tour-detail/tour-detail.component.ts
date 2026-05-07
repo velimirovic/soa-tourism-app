@@ -84,11 +84,13 @@ export class TourDetailComponent implements OnInit, AfterViewInit, OnDestroy {
           next: (reviews) => {
             this.reviews = reviews;
             this.loading = false;
-            this.cdr.detectChanges();
+            this.cdr.detectChanges(); // section becomes display:block
+            setTimeout(() => this.map?.invalidateSize(), 50);
           },
           error: () => {
             this.loading = false;
             this.cdr.detectChanges();
+            setTimeout(() => this.map?.invalidateSize(), 50);
           }
         });
       },
@@ -140,6 +142,8 @@ export class TourDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  get today(): string { return new Date().toISOString().split('T')[0]; }
+
   stars(n: number): number[] { return Array.from({ length: n }, (_, i) => i + 1); }
 
   difficultyClass(d: string): string { return d?.toLowerCase() ?? 'easy'; }
@@ -148,18 +152,22 @@ export class TourDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onReviewImageSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-    this.reviewImageFileName = file.name;
-    const reader = new FileReader();
-    reader.onload = () => {
-      this.reviewImages = [reader.result as string];
-      this.cdr.detectChanges();
-    };
-    reader.readAsDataURL(file);
+    const files = Array.from(input.files ?? []);
+    input.value = '';
+    const remaining = 10 - this.reviewImages.length;
+    files.slice(0, remaining).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        this.reviewImages = [...this.reviewImages, reader.result as string];
+        this.cdr.detectChanges();
+      };
+      reader.readAsDataURL(file);
+    });
   }
 
-  clearReviewImage(): void { this.reviewImages = []; this.reviewImageFileName = ''; }
+  removeReviewImage(index: number): void {
+    this.reviewImages = this.reviewImages.filter((_, i) => i !== index);
+  }
 
   submitReview(): void {
     if (!this.tour) return;
