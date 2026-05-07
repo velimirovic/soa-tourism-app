@@ -1,33 +1,47 @@
-<div class="td-page" *ngIf="!loading && !error && tour">
+<div class="td-page">
 
-  <!-- Header -->
-  <div class="td-header">
-    <button class="td-back-btn" (click)="goBack()">
-      <span class="material-icons">arrow_back</span>
-    </button>
-    <div>
-      <h2 class="td-title">{{ tour.name }}</h2>
-      <div class="td-meta">
-        <span class="td-badge td-badge--{{ difficultyClass(tour.difficulty) }}">
-          <span class="material-icons">
-            {{ tour.difficulty === 'EASY' ? 'directions_walk' : tour.difficulty === 'MEDIUM' ? 'directions_bike' : 'terrain' }}
-          </span>
-          {{ tour.difficulty }}
-        </span>
-        <span class="td-price">
-          <span class="material-icons">payments</span>
-          {{ tour.price === 0 ? 'Free' : tour.price + ' RSD' }}
-        </span>
-      </div>
-      <p class="td-description">{{ tour.description }}</p>
-      <div class="td-tags" *ngIf="tour.tags?.length">
-        <span class="td-tag" *ngFor="let t of tour.tags">{{ t }}</span>
-      </div>
-    </div>
+  <!-- Loading -->
+  <div *ngIf="loading" class="td-state">
+    <span class="material-icons spinning">sync</span> Loading…
   </div>
 
-  <!-- Map -->
-  <div class="td-section">
+  <!-- Error -->
+  <div *ngIf="error" class="td-state td-state--error">
+    <span class="material-icons">error</span> {{ error }}
+  </div>
+
+  <ng-container *ngIf="!loading && !error && tour">
+
+    <!-- Header -->
+    <div class="td-header">
+      <button class="td-back-btn" (click)="goBack()">
+        <span class="material-icons">arrow_back</span>
+      </button>
+      <div>
+        <h2 class="td-title">{{ tour.name }}</h2>
+        <div class="td-meta">
+          <span class="td-badge td-badge--{{ difficultyClass(tour.difficulty) }}">
+            <span class="material-icons">
+              {{ tour.difficulty === 'EASY' ? 'directions_walk' : tour.difficulty === 'MEDIUM' ? 'directions_bike' : 'terrain' }}
+            </span>
+            {{ tour.difficulty }}
+          </span>
+          <span class="td-price">
+            <span class="material-icons">payments</span>
+            {{ tour.price === 0 ? 'Free' : tour.price + ' RSD' }}
+          </span>
+        </div>
+        <p class="td-description">{{ tour.description }}</p>
+        <div class="td-tags" *ngIf="tour.tags?.length">
+          <span class="td-tag" *ngFor="let t of tour.tags">{{ t }}</span>
+        </div>
+      </div>
+    </div>
+
+  </ng-container>
+
+  <!-- Map — always in DOM so Leaflet can init in ngAfterViewInit -->
+  <div class="td-section" [style.display]="(!loading && !error && tour) ? 'block' : 'none'">
     <h3 class="td-section-title">
       <span class="material-icons">map</span>
       Route on Map
@@ -47,99 +61,100 @@
     <div class="td-empty" *ngIf="keyPoints.length === 0">No key points defined for this tour.</div>
   </div>
 
-  <!-- Reviews -->
-  <div class="td-section">
-    <h3 class="td-section-title">
-      <span class="material-icons">star</span>
-      Reviews <span class="td-count">({{ reviews.length }})</span>
-    </h3>
+  <ng-container *ngIf="!loading && !error && tour">
 
-    <!-- Add review form (Tourist only) -->
-    <div class="td-review-form" *ngIf="isTourist">
-      <h4 class="td-form-title">Leave a Review</h4>
+    <!-- Reviews -->
+    <div class="td-section">
+      <h3 class="td-section-title">
+        <span class="material-icons">star</span>
+        Reviews <span class="td-count">({{ reviews.length }})</span>
+      </h3>
 
-      <div class="td-field">
-        <label class="td-label">Rating *</label>
-        <div class="td-stars">
-          <button *ngFor="let s of stars(5)" class="td-star"
-            [class.td-star--active]="s <= reviewRating"
-            (click)="reviewRating = s" type="button">
-            <span class="material-icons">{{ s <= reviewRating ? 'star' : 'star_border' }}</span>
-          </button>
-        </div>
-      </div>
+      <!-- Add review form (Tourist only) -->
+      <div class="td-review-form" *ngIf="isTourist">
+        <h4 class="td-form-title">Leave a Review</h4>
 
-      <div class="td-field">
-        <label class="td-label">Comment</label>
-        <textarea class="td-input td-textarea" [(ngModel)]="reviewComment"
-          placeholder="Share your experience…" rows="3"></textarea>
-      </div>
-
-      <div class="td-field">
-        <label class="td-label">Date of Visit *</label>
-        <input type="date" class="td-input" [(ngModel)]="reviewVisitDate" />
-      </div>
-
-      <div class="td-field">
-        <label class="td-label">Photo <span class="td-optional">(optional)</span></label>
-
-        <div class="td-img-preview" *ngIf="reviewImages.length > 0">
-          <img [src]="reviewImages[0]" class="td-img-thumb" alt="Review photo" />
-          <button class="td-img-clear" type="button" (click)="clearReviewImage()">
-            <span class="material-icons">delete</span> Remove
-          </button>
-        </div>
-
-        <label class="td-upload-label" *ngIf="reviewImages.length === 0">
-          <span class="material-icons">upload</span>
-          Choose photo…
-          <input type="file" accept="image/*" (change)="onReviewImageSelected($event)" class="td-upload-input" />
-        </label>
-      </div>
-
-      <div class="td-form-error" *ngIf="reviewError">
-        <span class="material-icons">error_outline</span> {{ reviewError }}
-      </div>
-
-      <button class="td-submit-btn" (click)="submitReview()" [disabled]="reviewSubmitting">
-        <span class="material-icons">{{ reviewSubmitting ? 'hourglass_top' : 'rate_review' }}</span>
-        {{ reviewSubmitting ? 'Submitting…' : 'Submit Review' }}
-      </button>
-    </div>
-
-    <!-- Review list -->
-    <div class="td-reviews" *ngIf="reviews.length > 0">
-      <div class="td-review-card" *ngFor="let r of reviews">
-        <div class="td-review-header">
-          <span class="td-reviewer">{{ r.touristName || 'Anonymous' }}</span>
-          <div class="td-review-stars">
-            <span class="material-icons td-star-icon" *ngFor="let s of stars(r.rating)">star</span>
-            <span class="material-icons td-star-icon td-star-icon--empty" *ngFor="let s of stars(5 - r.rating)">star_border</span>
+        <div class="td-field">
+          <label class="td-label">Rating *</label>
+          <div class="td-stars">
+            <button *ngFor="let s of stars(5)" class="td-star"
+              [class.td-star--active]="s <= reviewRating"
+              (click)="reviewRating = s" type="button">
+              <span class="material-icons">{{ s <= reviewRating ? 'star' : 'star_border' }}</span>
+            </button>
           </div>
         </div>
-        <p class="td-review-comment" *ngIf="r.comment">{{ r.comment }}</p>
-        <img *ngIf="r.images?.length" [src]="r.images[0]" class="td-review-img" alt="Review photo" />
-        <div class="td-review-dates">
-          <span>
-            <span class="material-icons">hiking</span>
-            Visited: {{ r.visitDate | date: 'dd.MM.yyyy' }}
-          </span>
-          <span>
-            <span class="material-icons">calendar_today</span>
-            {{ r.commentDate | date: 'dd.MM.yyyy' }}
-          </span>
+
+        <div class="td-field">
+          <label class="td-label">Comment</label>
+          <textarea class="td-input td-textarea" [(ngModel)]="reviewComment"
+            placeholder="Share your experience…" rows="3"></textarea>
+        </div>
+
+        <div class="td-field">
+          <label class="td-label">Date of Visit *</label>
+          <input type="date" class="td-input" [(ngModel)]="reviewVisitDate" [max]="today" />
+        </div>
+
+        <div class="td-field">
+          <label class="td-label">Photos <span class="td-optional">(optional, max 10)</span></label>
+
+          <div class="td-img-grid" *ngIf="reviewImages.length > 0">
+            <div class="td-img-item" *ngFor="let img of reviewImages; let i = index">
+              <img [src]="img" class="td-img-thumb" alt="Review photo" />
+              <button class="td-img-remove" type="button" (click)="removeReviewImage(i)">
+                <span class="material-icons">close</span>
+              </button>
+            </div>
+          </div>
+
+          <label class="td-upload-label" *ngIf="reviewImages.length < 10">
+            <span class="material-icons">add_photo_alternate</span>
+            Add photo{{ reviewImages.length > 0 ? ' (' + reviewImages.length + '/10)' : '…' }}
+            <input type="file" accept="image/*" multiple (change)="onReviewImageSelected($event)" class="td-upload-input" />
+          </label>
+        </div>
+
+        <div class="td-form-error" *ngIf="reviewError">
+          <span class="material-icons">error_outline</span> {{ reviewError }}
+        </div>
+
+        <button class="td-submit-btn" (click)="submitReview()" [disabled]="reviewSubmitting">
+          <span class="material-icons">{{ reviewSubmitting ? 'hourglass_top' : 'rate_review' }}</span>
+          {{ reviewSubmitting ? 'Submitting…' : 'Submit Review' }}
+        </button>
+      </div>
+
+      <!-- Review list -->
+      <div class="td-reviews" *ngIf="reviews.length > 0">
+        <div class="td-review-card" *ngFor="let r of reviews">
+          <div class="td-review-header">
+            <span class="td-reviewer">{{ r.touristName || 'Anonymous' }}</span>
+            <div class="td-review-stars">
+              <span class="material-icons td-star-icon" *ngFor="let s of stars(r.rating)">star</span>
+              <span class="material-icons td-star-icon td-star-icon--empty" *ngFor="let s of stars(5 - r.rating)">star_border</span>
+            </div>
+          </div>
+          <p class="td-review-comment" *ngIf="r.comment">{{ r.comment }}</p>
+          <div class="td-review-imgs" *ngIf="r.images?.length">
+            <img *ngFor="let img of r.images" [src]="img" class="td-review-img" alt="Review photo" />
+          </div>
+          <div class="td-review-dates">
+            <span>
+              <span class="material-icons">hiking</span>
+              Visited: {{ r.visitDate | date: 'dd.MM.yyyy' }}
+            </span>
+            <span>
+              <span class="material-icons">calendar_today</span>
+              {{ r.commentDate | date: 'dd.MM.yyyy' }}
+            </span>
+          </div>
         </div>
       </div>
+
+      <div class="td-empty" *ngIf="reviews.length === 0">No reviews yet. Be the first!</div>
     </div>
 
-    <div class="td-empty" *ngIf="reviews.length === 0">No reviews yet. Be the first!</div>
-  </div>
-</div>
+  </ng-container>
 
-<div *ngIf="loading" class="td-state">
-  <span class="material-icons spinning">sync</span> Loading…
-</div>
-
-<div *ngIf="error" class="td-state td-state--error">
-  <span class="material-icons">error</span> {{ error }}
 </div>
