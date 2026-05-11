@@ -25,7 +25,7 @@
 
   <div *ngIf="!loading && !error && tours.length > 0" class="tpl__grid">
 
-    <div class="tc" *ngFor="let tour of tours">
+    <div class="tc" *ngFor="let tour of tours" (click)="goToDetail(tour.id)" style="cursor:pointer">
 
       <!-- Image banner -->
       <div class="tc__image-wrap" *ngIf="tour.firstKeyPointImageUrl">

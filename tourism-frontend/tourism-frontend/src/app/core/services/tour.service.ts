@@ -37,6 +37,26 @@ export interface UpdateTourRequest {
   tags: string[];
 }
 
+export interface CreateReviewRequest {
+  rating: number;
+  comment: string;
+  touristName: string;
+  visitDate: string;
+  images: string[];
+}
+
+export interface ReviewDto {
+  id: number;
+  tourId: number;
+  touristId: number;
+  touristName: string;
+  rating: number;
+  comment: string;
+  visitDate: string;
+  commentDate: string;
+  images: string[];
+}
+
 export interface TourDto {
   id: number;
   name: string;
@@ -83,5 +103,21 @@ export class TourService {
 
   deleteKeyPoint(tourId: number, keyPointId: number): Observable<void> {
     return this.http.delete<void>(`${this.base}/${tourId}/keypoints/${keyPointId}`);
+  }
+
+  updateKeyPoint(tourId: number, keyPointId: number, req: CreateKeyPointRequest): Observable<KeyPointDto> {
+    return this.http.put<KeyPointDto>(`${this.base}/${tourId}/keypoints/${keyPointId}`, req);
+  }
+
+  getTour(tourId: number): Observable<TourDto> {
+    return this.http.get<TourDto>(`${this.base}/${tourId}`);
+  }
+
+  getReviews(tourId: number): Observable<ReviewDto[]> {
+    return this.http.get<ReviewDto[]>(`${this.base}/${tourId}/reviews`);
+  }
+
+  addReview(tourId: number, req: CreateReviewRequest): Observable<ReviewDto> {
+    return this.http.post<ReviewDto>(`${this.base}/${tourId}/reviews`, req);
   }
 }
