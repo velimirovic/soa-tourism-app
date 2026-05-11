@@ -32,6 +32,12 @@ namespace StakeholdersService.Migrations
                     b.Property<string>("Biography")
                         .HasColumnType("text");
 
+                    b.Property<double?>("CurrentLatitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("CurrentLongitude")
+                        .HasColumnType("double precision");
+
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasColumnType("text");

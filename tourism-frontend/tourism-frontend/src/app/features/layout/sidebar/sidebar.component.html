@@ -40,6 +40,12 @@
         <span class="sidebar__nav-label">{{ isGuide ? 'My Tours' : 'Tours' }}</span>
       </a>
 
+      <!-- Position simulator — Tourist only -->
+      <a *ngIf="isTourist" routerLink="/simulator" routerLinkActive="sidebar__nav-item--active" class="sidebar__nav-item">
+        <span class="material-icons sidebar__nav-icon">location_searching</span>
+        <span class="sidebar__nav-label">Simulator</span>
+      </a>
+
       <a routerLink="/profile" routerLinkActive="sidebar__nav-item--active" class="sidebar__nav-item">
         <span class="material-icons sidebar__nav-icon">account_circle</span>
         <span class="sidebar__nav-label">Me</span>

@@ -10,6 +10,8 @@ export interface UserProfile {
   profilePicture: string | null;
   biography: string | null;
   motto: string | null;
+  currentLatitude: number | null;
+  currentLongitude: number | null;
 }
 
 export interface UpdateProfileDto {
@@ -32,5 +34,9 @@ export class ProfileService {
 
   updateProfile(userId: number, dto: UpdateProfileDto): Observable<UserProfile> {
     return this.http.put<UserProfile>(`${this.base}/${userId}`, dto);
+  }
+
+  updatePosition(userId: number, latitude: number, longitude: number): Observable<UserProfile> {
+    return this.http.put<UserProfile>(`${this.base}/${userId}/position`, { latitude, longitude });
   }
 }

@@ -9,4 +9,6 @@ public class UserProfile
     public string? ProfilePicture { get; set; }
     public string? Biography { get; set; }
     public string? Motto { get; set; }
+    public double? CurrentLatitude { get; set; }
+    public double? CurrentLongitude { get; set; }
 }

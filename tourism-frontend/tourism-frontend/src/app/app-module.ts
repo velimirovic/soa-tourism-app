@@ -29,10 +29,12 @@ import { ProfileComponent } from './features/profile/profile.component';
 import { PeopleComponent }  from './features/people/people.component';
 
 // Tours
-import { TourListComponent }       from './features/tours/tour-list/tour-list.component';
-import { CreateTourComponent }     from './features/tours/create-tour/create-tour.component';
-import { KeyPointsComponent }      from './features/tours/key-points/key-points.component';
-import { TourPublicListComponent } from './features/tours/tour-public-list/tour-public-list.component';
+import { TourListComponent }          from './features/tours/tour-list/tour-list.component';
+import { CreateTourComponent }        from './features/tours/create-tour/create-tour.component';
+import { KeyPointsComponent }         from './features/tours/key-points/key-points.component';
+import { TourPublicListComponent }    from './features/tours/tour-public-list/tour-public-list.component';
+import { TourDetailComponent }        from './features/tours/tour-detail/tour-detail.component';
+import { PositionSimulatorComponent } from './features/position-simulator/position-simulator.component';
 
 @NgModule({
   declarations: [
@@ -51,7 +53,9 @@ import { TourPublicListComponent } from './features/tours/tour-public-list/tour-
     TourListComponent,
     CreateTourComponent,
     KeyPointsComponent,
-    TourPublicListComponent
+    TourPublicListComponent,
+    TourDetailComponent,
+    PositionSimulatorComponent
   ],
   imports: [
     BrowserModule,
