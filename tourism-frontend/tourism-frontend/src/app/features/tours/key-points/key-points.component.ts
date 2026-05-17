@@ -1,7 +1,10 @@
 import { AfterViewInit, ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import * as L from 'leaflet';
-import { TourService, TourDto, KeyPointDto, CreateKeyPointRequest } from '../../../core/services/tour.service';
+import {
+  TourService, TourDto, KeyPointDto, CreateKeyPointRequest,
+  TourDurationDto, CreateTourDurationRequest
+} from '../../../core/services/tour.service';
 
 // Fix leaflet default marker icon paths broken by webpack
 const iconDefault = L.icon({
@@ -53,10 +56,23 @@ export class KeyPointsComponent implements OnInit, AfterViewInit, OnDestroy {
   // Delete state
   deletingId: number | null = null;
 
+  // Durations
+  durations: TourDurationDto[] = [];
+  newTransportType: 'WALKING' | 'BICYCLE' | 'CAR' = 'WALKING';
+  newDurationMinutes: number | null = null;
+  durationError = '';
+  durationSaving = false;
+
+  // Publish state
+  publishing = false;
+  publishError = '';
+
+  readonly transportTypes: Array<'WALKING' | 'BICYCLE' | 'CAR'> = ['WALKING', 'BICYCLE', 'CAR'];
+
   private map!: L.Map;
   private selectedMarker: L.Marker | null = null;
   private kpMarkers: L.Marker[] = [];
-  private polyline: L.Polyline | null = null;
+  private polyline: L.Layer | null = null;
 
   constructor(
     private route: ActivatedRoute,
@@ -67,7 +83,7 @@ export class KeyPointsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit(): void {
     this.tourId = Number(this.route.snapshot.paramMap.get('id'));
-    this.loadKeyPoints();
+    this.loadAll();
   }
 
   ngAfterViewInit(): void {
@@ -76,6 +92,43 @@ export class KeyPointsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.map) this.map.remove();
+  }
+
+  private loadAll(): void {
+    this.loading = true;
+    this.tourService.getTour(this.tourId).subscribe({
+      next: (tour) => {
+        this.tour      = tour;
+        this.durations = tour.durations ?? [];
+        this.cdr.detectChanges();
+      },
+      error: () => { /* non-blocking */ }
+    });
+
+    this.tourService.getKeyPoints(this.tourId).subscribe({
+      next: (kps) => {
+        this.keyPoints = kps;
+        this.loading   = false;
+        this.cdr.detectChanges();
+        this.renderKpMarkers();
+      },
+      error: () => {
+        this.error   = 'Failed to load key points.';
+        this.loading = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  private reloadTour(): void {
+    this.tourService.getTour(this.tourId).subscribe({
+      next: (tour) => {
+        this.tour      = tour;
+        this.durations = tour.durations ?? [];
+        this.cdr.detectChanges();
+      },
+      error: () => { /* non-blocking */ }
+    });
   }
 
   private initMap(): void {
@@ -90,14 +143,12 @@ export class KeyPointsComponent implements OnInit, AfterViewInit, OnDestroy {
       const lng = parseFloat(e.latlng.lng.toFixed(6));
 
       if (this.editingKp) {
-        // In edit mode, click updates the edit coords
         this.editLatitude  = lat;
         this.editLongitude = lng;
         if (this.selectedMarker) this.map.removeLayer(this.selectedMarker);
         this.selectedMarker = L.marker([lat, lng])
           .addTo(this.map).bindPopup('New position').openPopup();
       } else {
-        // Add mode
         this.latitude  = lat;
         this.longitude = lng;
         if (this.selectedMarker) this.map.removeLayer(this.selectedMarker);
@@ -105,23 +156,6 @@ export class KeyPointsComponent implements OnInit, AfterViewInit, OnDestroy {
           .addTo(this.map).bindPopup('Selected location').openPopup();
       }
       this.cdr.detectChanges();
-    });
-  }
-
-  private loadKeyPoints(): void {
-    this.loading = true;
-    this.tourService.getKeyPoints(this.tourId).subscribe({
-      next: (kps) => {
-        this.keyPoints = kps;
-        this.loading = false;
-        this.cdr.detectChanges();
-        this.renderKpMarkers();
-      },
-      error: () => {
-        this.error = 'Failed to load key points.';
-        this.loading = false;
-        this.cdr.detectChanges();
-      }
     });
   }
 
@@ -150,9 +184,24 @@ export class KeyPointsComponent implements OnInit, AfterViewInit, OnDestroy {
     });
 
     if (this.keyPoints.length >= 2) {
-      const latlngs = this.keyPoints.map(kp => [kp.latitude, kp.longitude] as L.LatLngTuple);
-      this.polyline = L.polyline(latlngs, { color: '#a855f7', weight: 3, dashArray: '6,6' })
-        .addTo(this.map);
+      const coords = this.keyPoints.map(kp => `${kp.longitude},${kp.latitude}`).join(';');
+      const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
+
+      fetch(url)
+        .then(r => r.json())
+        .then(data => {
+          if (!this.map) return;
+          const routeCoords: [number, number][] = data?.routes?.[0]?.geometry?.coordinates;
+          if (routeCoords?.length) {
+            const latlngs = routeCoords.map(([lng, lat]) => [lat, lng] as L.LatLngTuple);
+            this.polyline = L.polyline(latlngs, { color: '#a855f7', weight: 4 }).addTo(this.map);
+          }
+        })
+        .catch(() => {
+          if (!this.map) return;
+          const latlngs = this.keyPoints.map(kp => [kp.latitude, kp.longitude] as L.LatLngTuple);
+          this.polyline = L.polyline(latlngs, { color: '#a855f7', weight: 3, dashArray: '6,6' }).addTo(this.map);
+        });
     }
 
     if (this.keyPoints.length > 0) {
@@ -193,7 +242,7 @@ export class KeyPointsComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     this.submitting = true;
-    this.formError = '';
+    this.formError  = '';
 
     const req: CreateKeyPointRequest = {
       name:        this.name.trim(),
@@ -210,9 +259,10 @@ export class KeyPointsComponent implements OnInit, AfterViewInit, OnDestroy {
         this.resetForm();
         this.cdr.detectChanges();
         this.renderKpMarkers();
+        this.reloadTour(); // refresh lengthInKm
       },
       error: () => {
-        this.formError = 'Failed to add key point.';
+        this.formError  = 'Failed to add key point.';
         this.submitting = false;
         this.cdr.detectChanges();
       }
@@ -221,14 +271,14 @@ export class KeyPointsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // ── Edit key point ──────────────────────────────────────────────
   openEdit(kp: KeyPointDto): void {
-    this.editingKp      = kp;
-    this.editName       = kp.name;
-    this.editDescription= kp.description ?? '';
-    this.editImageBase64= kp.imageUrl ?? '';
+    this.editingKp       = kp;
+    this.editName        = kp.name;
+    this.editDescription = kp.description ?? '';
+    this.editImageBase64 = kp.imageUrl ?? '';
     this.editImageFileName = '';
-    this.editLatitude   = kp.latitude;
-    this.editLongitude  = kp.longitude;
-    this.editError      = '';
+    this.editLatitude    = kp.latitude;
+    this.editLongitude   = kp.longitude;
+    this.editError       = '';
 
     if (this.selectedMarker) { this.map.removeLayer(this.selectedMarker); this.selectedMarker = null; }
     this.selectedMarker = L.marker([kp.latitude, kp.longitude])
@@ -251,7 +301,7 @@ export class KeyPointsComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     this.editSaving = true;
-    this.editError = '';
+    this.editError  = '';
 
     const req: CreateKeyPointRequest = {
       name:        this.editName.trim(),
@@ -264,14 +314,15 @@ export class KeyPointsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.tourService.updateKeyPoint(this.tourId, this.editingKp.id, req).subscribe({
       next: (updated) => {
         this.keyPoints = this.keyPoints.map(k => k.id === updated.id ? updated : k);
-        this.editSaving = false;
-        this.editingKp = null;
+        this.editSaving  = false;
+        this.editingKp   = null;
         if (this.selectedMarker) { this.map.removeLayer(this.selectedMarker); this.selectedMarker = null; }
         this.cdr.detectChanges();
         this.renderKpMarkers();
+        this.reloadTour();
       },
       error: () => {
-        this.editError = 'Failed to update key point.';
+        this.editError  = 'Failed to update key point.';
         this.editSaving = false;
         this.cdr.detectChanges();
       }
@@ -285,10 +336,11 @@ export class KeyPointsComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.tourService.deleteKeyPoint(this.tourId, kpId).subscribe({
       next: () => {
-        this.keyPoints = this.keyPoints.filter(kp => kp.id !== kpId);
+        this.keyPoints  = this.keyPoints.filter(kp => kp.id !== kpId);
         this.deletingId = null;
         this.cdr.detectChanges();
         this.renderKpMarkers();
+        this.reloadTour();
       },
       error: () => {
         this.deletingId = null;
@@ -297,13 +349,79 @@ export class KeyPointsComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  // ── Durations ───────────────────────────────────────────────────
+  addDuration(): void {
+    if (!this.newDurationMinutes || this.newDurationMinutes < 1) {
+      this.durationError = 'Enter a valid duration (at least 1 minute).';
+      return;
+    }
+
+    this.durationSaving = true;
+    this.durationError  = '';
+
+    const req: CreateTourDurationRequest = {
+      transportType:     this.newTransportType,
+      durationInMinutes: this.newDurationMinutes
+    };
+
+    this.tourService.addDuration(this.tourId, req).subscribe({
+      next: (d) => {
+        this.durations          = [...this.durations, d];
+        this.newDurationMinutes = null;
+        this.durationSaving     = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.durationError  = err?.error?.error ?? 'Failed to add duration.';
+        this.durationSaving = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  // ── Publish ─────────────────────────────────────────────────────
+  publishTour(): void {
+    this.publishing   = true;
+    this.publishError = '';
+
+    this.tourService.publishTour(this.tourId).subscribe({
+      next: (updated) => {
+        this.tour       = updated;
+        this.publishing = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.publishError = err?.error?.error ?? 'Could not publish tour.';
+        this.publishing   = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  // ── Helpers ─────────────────────────────────────────────────────
+  transportIcon(type: string): string {
+    switch (type) {
+      case 'BICYCLE': return 'directions_bike';
+      case 'CAR':     return 'directions_car';
+      default:        return 'directions_walk';
+    }
+  }
+
+  transportLabel(type: string): string {
+    switch (type) {
+      case 'BICYCLE': return 'Bicikl';
+      case 'CAR':     return 'Auto';
+      default:        return 'Peške';
+    }
+  }
+
   private resetForm(): void {
-    this.name = '';
+    this.name        = '';
     this.description = '';
     this.imageBase64 = '';
     this.imageFileName = '';
-    this.latitude = null;
-    this.longitude = null;
+    this.latitude    = null;
+    this.longitude   = null;
     if (this.selectedMarker) { this.map.removeLayer(this.selectedMarker); this.selectedMarker = null; }
   }
 
