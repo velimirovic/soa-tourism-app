@@ -15,7 +15,7 @@ export class BlogListComponent implements OnInit {
   blogs: Blog[] = [];
   loading = true;
   error = '';
-  mode: 'all' | 'feed' | 'mine' = 'all';
+  mode: 'feed' | 'mine' = 'feed';
   followingIds = new Set<string>();
 
   readonly PAGE_SIZE = 9;
@@ -43,14 +43,10 @@ export class BlogListComponent implements OnInit {
   loadBlogs(): void {
     this.loading = true;
     this.error = '';
-    const obs = this.mode === 'feed' ? this.blogService.getFeed()
-              : this.mode === 'mine' ? this.blogService.getMyBlogs()
-              : this.blogService.getBlogs();
+    const obs = this.mode === 'mine' ? this.blogService.getMyBlogs() : this.blogService.getFeed();
     obs.subscribe({
       next: (blogs) => {
-        this.blogs = this.mode === 'all'
-          ? blogs.filter(b => b.authorId !== this.currentUserId)
-          : blogs;
+        this.blogs = blogs;
         this.loading = false;
         this.cdr.detectChanges();
       },
@@ -62,7 +58,7 @@ export class BlogListComponent implements OnInit {
     });
   }
 
-  switchMode(mode: 'all' | 'feed' | 'mine'): void {
+  switchMode(mode: 'feed' | 'mine'): void {
     if (this.mode === mode) return;
     this.mode = mode;
     this.currentPage = 1;

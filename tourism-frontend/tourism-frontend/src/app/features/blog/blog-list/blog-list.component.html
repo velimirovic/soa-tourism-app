@@ -1,20 +1,14 @@
 <div class="blog-list">
 
   <div class="blog-list__header">
-    <h1 class="blog-list__title">
-      <span class="material-icons">article</span>
-      Blogs
-    </h1>
+    <div>
+      <h1 class="blog-list__title">
+        <span class="material-icons">article</span>
+        Blogs
+      </h1>
+    </div>
     <div class="blog-list__header-actions">
       <div class="blog-list__mode-toggle">
-        <button
-          class="toggle-btn"
-          [class.toggle-btn--active]="mode === 'mine'"
-          (click)="switchMode('mine')"
-        >
-          <span class="material-icons">person</span>
-          My Blogs
-        </button>
         <button
           class="toggle-btn"
           [class.toggle-btn--active]="mode === 'feed'"
@@ -25,11 +19,11 @@
         </button>
         <button
           class="toggle-btn"
-          [class.toggle-btn--active]="mode === 'all'"
-          (click)="switchMode('all')"
+          [class.toggle-btn--active]="mode === 'mine'"
+          (click)="switchMode('mine')"
         >
-          <span class="material-icons">public</span>
-          All
+          <span class="material-icons">person</span>
+          My Blogs
         </button>
       </div>
       <button class="btn btn--primary" (click)="createBlog()">
@@ -51,7 +45,8 @@
 
   <div *ngIf="!loading && !error && blogs.length === 0" class="blog-list__state">
     <span class="material-icons">inbox</span>
-    No blogs yet. Be the first to write one!
+    <span *ngIf="mode === 'feed'">No blogs from people you follow yet. Go to <strong>People</strong> to find and follow users.</span>
+    <span *ngIf="mode === 'mine'">You haven't written any blogs yet. Click <strong>Write a Blog</strong> to start.</span>
   </div>
 
   <div *ngIf="!loading && blogs.length > 0" class="blog-list__grid">
