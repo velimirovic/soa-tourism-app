@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface TourRepository extends JpaRepository<Tour, Long> {
     List<Tour> findByAuthorIdOrderByCreatedAtDesc(Long authorId);
+    List<Tour> findByStatusOrderByPublishedAtDesc(String status);
 }

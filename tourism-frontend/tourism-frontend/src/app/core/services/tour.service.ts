@@ -57,6 +57,18 @@ export interface ReviewDto {
   images: string[];
 }
 
+export interface TourDurationDto {
+  id: number;
+  tourId: number;
+  transportType: 'WALKING' | 'BICYCLE' | 'CAR';
+  durationInMinutes: number;
+}
+
+export interface CreateTourDurationRequest {
+  transportType: 'WALKING' | 'BICYCLE' | 'CAR';
+  durationInMinutes: number;
+}
+
 export interface TourDto {
   id: number;
   name: string;
@@ -67,7 +79,12 @@ export interface TourDto {
   price: number;
   authorId: number;
   createdAt: string;
+  publishedAt?: string;
+  archivedAt?: string;
+  lengthInKm?: number;
   firstKeyPointImageUrl?: string;
+  firstKeyPoint?: KeyPointDto;
+  durations?: TourDurationDto[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -93,6 +110,10 @@ export class TourService {
     return this.http.get<TourDto[]>(this.base);
   }
 
+  getTour(tourId: number): Observable<TourDto> {
+    return this.http.get<TourDto>(`${this.base}/${tourId}`);
+  }
+
   updateTour(tourId: number, req: UpdateTourRequest): Observable<TourDto> {
     return this.http.put<TourDto>(`${this.base}/${tourId}`, req);
   }
@@ -109,8 +130,24 @@ export class TourService {
     return this.http.put<KeyPointDto>(`${this.base}/${tourId}/keypoints/${keyPointId}`, req);
   }
 
-  getTour(tourId: number): Observable<TourDto> {
-    return this.http.get<TourDto>(`${this.base}/${tourId}`);
+  publishTour(tourId: number): Observable<TourDto> {
+    return this.http.post<TourDto>(`${this.base}/${tourId}/publish`, {});
+  }
+
+  archiveTour(tourId: number): Observable<TourDto> {
+    return this.http.post<TourDto>(`${this.base}/${tourId}/archive`, {});
+  }
+
+  activateTour(tourId: number): Observable<TourDto> {
+    return this.http.post<TourDto>(`${this.base}/${tourId}/activate`, {});
+  }
+
+  getDurations(tourId: number): Observable<TourDurationDto[]> {
+    return this.http.get<TourDurationDto[]>(`${this.base}/${tourId}/durations`);
+  }
+
+  addDuration(tourId: number, req: CreateTourDurationRequest): Observable<TourDurationDto> {
+    return this.http.post<TourDurationDto>(`${this.base}/${tourId}/durations`, req);
   }
 
   getReviews(tourId: number): Observable<ReviewDto[]> {

@@ -34,16 +34,15 @@
 
     <div class="tour-card" *ngFor="let tour of tours">
 
-      <!-- Image banner (only when first key-point has an image) -->
+      <!-- Image banner -->
       <div class="tour-card__image-wrap" *ngIf="tour.firstKeyPointImageUrl">
         <img [src]="tour.firstKeyPointImageUrl" class="tour-card__image" [alt]="tour.name" />
-        <!-- Edit button overlaid on image -->
         <button class="tour-card__edit-btn tour-card__edit-btn--overlay" (click)="openEdit(tour)" title="Edit tour">
           <span class="material-icons">edit</span>
         </button>
       </div>
 
-      <!-- No-image header row -->
+      <!-- Top row: difficulty + status + edit -->
       <div class="tour-card__top" [class.tour-card__top--no-img]="!tour.firstKeyPointImageUrl">
         <span class="tour-card__difficulty tour-card__difficulty--{{ difficultyClass(tour.difficulty) }}">
           <span class="material-icons">
@@ -52,11 +51,10 @@
           {{ tour.difficulty }}
         </span>
         <div class="tour-card__top-right">
-          <span class="tour-card__status">
-            <span class="material-icons">edit_note</span>
+          <span class="tour-card__status tour-card__status--{{ statusClass(tour.status) }}">
+            <span class="material-icons">{{ statusIcon(tour.status) }}</span>
             {{ tour.status }}
           </span>
-          <!-- Edit button in top-right when no image -->
           <button *ngIf="!tour.firstKeyPointImageUrl"
             class="tour-card__edit-btn" (click)="openEdit(tour)" title="Edit tour">
             <span class="material-icons">edit</span>
@@ -74,16 +72,57 @@
         <span class="tour-card__tag" *ngFor="let tag of tour.tags">{{ tag }}</span>
       </div>
 
-      <div class="tour-card__footer">
-        <span class="tour-card__price">
-          <span class="material-icons">payments</span>
-          {{ tour.price === 0 ? 'Free' : tour.price + ' RSD' }}
+      <!-- Durations chips -->
+      <div class="tour-card__durations" *ngIf="tour.durations && tour.durations.length > 0">
+        <span class="tour-card__duration-chip" *ngFor="let d of tour.durations">
+          <span class="material-icons">{{ transportIcon(d.transportType) }}</span>
+          {{ d.durationInMinutes }} min
         </span>
-        <span class="tour-card__date">{{ tour.createdAt | date: 'dd.MM.yyyy' }}</span>
-        <button class="tour-card__kp-btn" (click)="goKeyPoints(tour.id)">
-          <span class="material-icons">place</span>
-          Key Points
-        </button>
+      </div>
+
+      <!-- Footer -->
+      <div class="tour-card__footer">
+        <div class="tour-card__meta">
+          <span class="tour-card__price">
+            <span class="material-icons">payments</span>
+            {{ tour.price === 0 ? 'Free' : tour.price + ' RSD' }}
+          </span>
+          <span class="tour-card__length" *ngIf="tour.lengthInKm">
+            <span class="material-icons">straighten</span>
+            {{ tour.lengthInKm }} km
+          </span>
+        </div>
+        <div class="tour-card__actions">
+          <button class="tour-card__kp-btn" (click)="goKeyPoints(tour.id)" title="Manage key points">
+            <span class="material-icons">place</span>
+            Key Points
+          </button>
+          <button class="tour-card__dur-btn" (click)="openDurations(tour)" title="Manage durations">
+            <span class="material-icons">schedule</span>
+            Durations
+          </button>
+          <button *ngIf="tour.status === 'DRAFT'"
+            class="tour-card__action-btn tour-card__action-btn--publish"
+            [disabled]="actioningId === tour.id"
+            (click)="publish(tour)" title="Publish tour">
+            <span class="material-icons">{{ actioningId === tour.id ? 'hourglass_top' : 'public' }}</span>
+            {{ actioningId === tour.id ? '' : 'Publish' }}
+          </button>
+          <button *ngIf="tour.status === 'PUBLISHED'"
+            class="tour-card__action-btn tour-card__action-btn--archive"
+            [disabled]="actioningId === tour.id"
+            (click)="archive(tour)" title="Archive tour">
+            <span class="material-icons">{{ actioningId === tour.id ? 'hourglass_top' : 'inventory_2' }}</span>
+            {{ actioningId === tour.id ? '' : 'Archive' }}
+          </button>
+          <button *ngIf="tour.status === 'ARCHIVED'"
+            class="tour-card__action-btn tour-card__action-btn--activate"
+            [disabled]="actioningId === tour.id"
+            (click)="activate(tour)" title="Re-activate tour">
+            <span class="material-icons">{{ actioningId === tour.id ? 'hourglass_top' : 'refresh' }}</span>
+            {{ actioningId === tour.id ? '' : 'Activate' }}
+          </button>
+        </div>
       </div>
 
     </div>
@@ -170,6 +209,78 @@
       <button class="modal__save-btn" (click)="saveEdit()" [disabled]="editSaving">
         <span class="material-icons">{{ editSaving ? 'hourglass_top' : 'save' }}</span>
         {{ editSaving ? 'Saving…' : 'Save Changes' }}
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Durations Modal ───────────────────────────────────────── -->
+<div class="modal-overlay" *ngIf="durationsTour" (click)="closeDurations()">
+  <div class="modal" (click)="$event.stopPropagation()">
+
+    <div class="modal__header">
+      <h3 class="modal__title">
+        <span class="material-icons">schedule</span>
+        Durations — {{ durationsTour.name }}
+      </h3>
+      <button class="modal__close" (click)="closeDurations()">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+
+    <div class="modal__body">
+
+      <!-- Existing durations -->
+      <div class="dur-list" *ngIf="durations.length > 0">
+        <div class="dur-item" *ngFor="let d of durations">
+          <span class="material-icons dur-item__icon">{{ transportIcon(d.transportType) }}</span>
+          <span class="dur-item__label">{{ transportLabel(d.transportType) }}</span>
+          <span class="dur-item__time">{{ d.durationInMinutes }} min</span>
+        </div>
+      </div>
+      <div class="modal__empty-hint" *ngIf="durations.length === 0">
+        <span class="material-icons">info_outline</span>
+        No durations defined yet. Add at least one to be able to publish.
+      </div>
+
+      <!-- Add new duration -->
+      <div class="modal__section-title">Add duration</div>
+
+      <div class="modal__field">
+        <label class="modal__label">Transport type</label>
+        <div class="modal__diff-group">
+          <button
+            *ngFor="let t of transportTypes"
+            class="modal__diff-btn modal__diff-btn--transport"
+            [class.modal__diff-btn--active]="newTransportType === t"
+            type="button"
+            (click)="newTransportType = t">
+            <span class="material-icons">{{ transportIcon(t) }}</span>
+            {{ transportLabel(t) }}
+          </button>
+        </div>
+      </div>
+
+      <div class="modal__field">
+        <label class="modal__label">Duration (minutes) *</label>
+        <input class="modal__input" type="number" min="1"
+          [(ngModel)]="newDurationMinutes"
+          placeholder="e.g. 90" />
+      </div>
+
+      <div class="modal__error" *ngIf="durationError">
+        <span class="material-icons">error_outline</span>
+        {{ durationError }}
+      </div>
+
+    </div>
+
+    <div class="modal__footer">
+      <button class="modal__cancel-btn" (click)="closeDurations()">Close</button>
+      <button class="modal__save-btn" (click)="addDuration()" [disabled]="durationSaving">
+        <span class="material-icons">{{ durationSaving ? 'hourglass_top' : 'add' }}</span>
+        {{ durationSaving ? 'Adding…' : 'Add Duration' }}
       </button>
     </div>
 
