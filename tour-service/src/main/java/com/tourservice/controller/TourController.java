@@ -19,15 +19,19 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.tourservice.dto.CreateKeyPointRequest;
 import com.tourservice.dto.CreateReviewRequest;
+import com.tourservice.dto.CreateTourDurationRequest;
 import com.tourservice.dto.CreateTourRequest;
 import com.tourservice.dto.KeyPointResponse;
 import com.tourservice.dto.ReviewResponse;
+import com.tourservice.dto.TourDurationResponse;
 import com.tourservice.dto.TourResponse;
 import com.tourservice.model.KeyPoint;
 import com.tourservice.model.Review;
 import com.tourservice.model.Tour;
+import com.tourservice.model.TourDuration;
 import com.tourservice.repository.KeyPointRepository;
 import com.tourservice.repository.ReviewRepository;
+import com.tourservice.repository.TourDurationRepository;
 import com.tourservice.repository.TourRepository;
 import com.tourservice.util.JwtUtil;
 
@@ -40,19 +44,23 @@ public class TourController {
     private final TourRepository tourRepository;
     private final KeyPointRepository keyPointRepository;
     private final ReviewRepository reviewRepository;
+    private final TourDurationRepository tourDurationRepository;
     private final JwtUtil jwtUtil;
 
     public TourController(TourRepository tourRepository,
                           KeyPointRepository keyPointRepository,
                           ReviewRepository reviewRepository,
+                          TourDurationRepository tourDurationRepository,
                           JwtUtil jwtUtil) {
-        this.tourRepository = tourRepository;
-        this.keyPointRepository = keyPointRepository;
-        this.reviewRepository = reviewRepository;
-        this.jwtUtil = jwtUtil;
+        this.tourRepository         = tourRepository;
+        this.keyPointRepository     = keyPointRepository;
+        this.reviewRepository       = reviewRepository;
+        this.tourDurationRepository = tourDurationRepository;
+        this.jwtUtil                = jwtUtil;
     }
 
-    // POST
+    // ─── Kreiranje ture ────────────────────────────────────────────────────────
+
     @PostMapping
     public ResponseEntity<?> createTour(
             @RequestHeader("Authorization") String authHeader,
@@ -77,60 +85,8 @@ public class TourController {
         return ResponseEntity.status(201).body(TourResponse.from(saved));
     }
 
-    // GET /tours/my
-    @GetMapping("/my")
-    public ResponseEntity<?> getMyTours(
-            @RequestHeader("Authorization") String authHeader) {
+    // ─── Ažuriranje ture ───────────────────────────────────────────────────────
 
-        Long authorId = jwtUtil.extractUserId(authHeader);
-        if (authorId == null) {
-            return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
-        }
-
-        List<TourResponse> tours = tourRepository
-                .findByAuthorIdOrderByCreatedAtDesc(authorId)
-                .stream()
-                .map(tour -> {
-                    String img = keyPointRepository.findByTourIdOrderById(tour.getId())
-                            .stream()
-                            .map(kp -> kp.getImageUrl())
-                            .filter(url -> url != null && !url.isBlank())
-                            .findFirst()
-                            .orElse(null);
-                    return TourResponse.from(tour, img);
-                })
-                .collect(Collectors.toList());
-
-        return ResponseEntity.ok(tours);
-    }
-
-    // GET /tours  — sve ture (za Tourist prikaz)
-    @GetMapping
-    public ResponseEntity<?> getAllTours(
-            @RequestHeader("Authorization") String authHeader) {
-
-        Long userId = jwtUtil.extractUserId(authHeader);
-        if (userId == null) {
-            return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
-        }
-
-        List<TourResponse> tours = tourRepository.findAll()
-                .stream()
-                .map(tour -> {
-                    String img = keyPointRepository.findByTourIdOrderById(tour.getId())
-                            .stream()
-                            .map(kp -> kp.getImageUrl())
-                            .filter(url -> url != null && !url.isBlank())
-                            .findFirst()
-                            .orElse(null);
-                    return TourResponse.from(tour, img);
-                })
-                .collect(Collectors.toList());
-
-        return ResponseEntity.ok(tours);
-    }
-
-    // PUT /tours/{id}  — edit ture (samo autor)
     @PutMapping("/{id}")
     public ResponseEntity<?> updateTour(
             @RequestHeader("Authorization") String authHeader,
@@ -154,12 +110,190 @@ public class TourController {
         }).orElse(ResponseEntity.status(404).body(Map.of("error", "Tour not found")));
     }
 
-    // POST /tours/{tourId}/keypoints
-    @PostMapping("/{tourId}/keypoints")
-    public ResponseEntity<?> addKeyPoint(
+    // ─── Listanje tura ─────────────────────────────────────────────────────────
+
+    // Samo PUBLISHED ture (javni listing za turiste)
+    @GetMapping
+    public ResponseEntity<?> getAllTours(
+            @RequestHeader("Authorization") String authHeader) {
+
+        Long userId = jwtUtil.extractUserId(authHeader);
+        if (userId == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+        }
+
+        List<TourResponse> tours = tourRepository.findByStatusOrderByPublishedAtDesc("PUBLISHED")
+                .stream()
+                .map(tour -> {
+                    List<KeyPoint> kps = keyPointRepository.findByTourIdOrderById(tour.getId());
+                    KeyPointResponse firstKp = kps.isEmpty() ? null : KeyPointResponse.from(kps.get(0));
+                    List<TourDurationResponse> durations = tourDurationRepository.findByTourId(tour.getId())
+                            .stream().map(TourDurationResponse::from).collect(Collectors.toList());
+                    return TourResponse.from(tour, firstKp, durations);
+                })
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(tours);
+    }
+
+    // Ture autora (sve statuse)
+    @GetMapping("/my")
+    public ResponseEntity<?> getMyTours(
+            @RequestHeader("Authorization") String authHeader) {
+
+        Long authorId = jwtUtil.extractUserId(authHeader);
+        if (authorId == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+        }
+
+        List<TourResponse> tours = tourRepository
+                .findByAuthorIdOrderByCreatedAtDesc(authorId)
+                .stream()
+                .map(tour -> {
+                    List<KeyPoint> kps = keyPointRepository.findByTourIdOrderById(tour.getId());
+                    KeyPointResponse firstKp = kps.isEmpty() ? null : KeyPointResponse.from(kps.get(0));
+                    List<TourDurationResponse> durations = tourDurationRepository.findByTourId(tour.getId())
+                            .stream().map(TourDurationResponse::from).collect(Collectors.toList());
+                    return TourResponse.from(tour, firstKp, durations);
+                })
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(tours);
+    }
+
+    // Detalj ture – turista vidi samo PUBLISHED, ostali vide sve
+    @GetMapping("/{tourId}")
+    public ResponseEntity<?> getTour(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long tourId) {
+
+        Long userId = jwtUtil.extractUserId(authHeader);
+        if (userId == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+        }
+
+        String role = jwtUtil.extractRole(authHeader);
+        boolean isTourist = "Tourist".equalsIgnoreCase(role);
+
+        return tourRepository.findById(tourId).map(tour -> {
+            if (isTourist && !"PUBLISHED".equals(tour.getStatus())) {
+                return ResponseEntity.status(404).body(Map.of("error", "Tour not found"));
+            }
+            List<KeyPoint> kps = keyPointRepository.findByTourIdOrderById(tour.getId());
+            KeyPointResponse firstKp = kps.isEmpty() ? null : KeyPointResponse.from(kps.get(0));
+            List<TourDurationResponse> durations = tourDurationRepository.findByTourId(tour.getId())
+                    .stream().map(TourDurationResponse::from).collect(Collectors.toList());
+            return ResponseEntity.ok((Object) TourResponse.from(tour, firstKp, durations));
+        }).orElse(ResponseEntity.status(404).body(Map.of("error", "Tour not found")));
+    }
+
+    // ─── Upravljanje statusom ──────────────────────────────────────────────────
+
+    // Objavi turu (DRAFT → PUBLISHED)
+    @PostMapping("/{id}/publish")
+    public ResponseEntity<?> publishTour(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long id) {
+
+        Long authorId = jwtUtil.extractUserId(authHeader);
+        if (authorId == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+        }
+
+        return tourRepository.findById(id).map(tour -> {
+            if (!tour.getAuthorId().equals(authorId)) {
+                return ResponseEntity.status(403).body(Map.of("error", "Forbidden"));
+            }
+
+            // Provjera osnovnih podataka
+            if (isBlank(tour.getName()) || isBlank(tour.getDescription())
+                    || isBlank(tour.getDifficulty()) || tour.getTags() == null || tour.getTags().isEmpty()) {
+                return ResponseEntity.status(400).body(Map.of("error",
+                        "Tour must have name, description, difficulty and at least one tag"));
+            }
+
+            // Provjera ključnih tačaka
+            List<KeyPoint> kps = keyPointRepository.findByTourIdOrderById(id);
+            if (kps.size() < 2) {
+                return ResponseEntity.status(400).body(Map.of("error",
+                        "Tour must have at least 2 key points"));
+            }
+
+            // Provjera trajanja
+            List<TourDuration> durations = tourDurationRepository.findByTourId(id);
+            if (durations.isEmpty()) {
+                return ResponseEntity.status(400).body(Map.of("error",
+                        "Tour must have at least one duration defined"));
+            }
+
+            tour.setStatus("PUBLISHED");
+            tour.setPublishedAt(LocalDateTime.now());
+            Tour saved = tourRepository.save(tour);
+
+            List<TourDurationResponse> durationResponses = durations.stream()
+                    .map(TourDurationResponse::from).collect(Collectors.toList());
+            KeyPointResponse firstKp = KeyPointResponse.from(kps.get(0));
+            return ResponseEntity.ok((Object) TourResponse.from(saved, firstKp, durationResponses));
+        }).orElse(ResponseEntity.status(404).body(Map.of("error", "Tour not found")));
+    }
+
+    // Arhiviraj turu (PUBLISHED → ARCHIVED)
+    @PostMapping("/{id}/archive")
+    public ResponseEntity<?> archiveTour(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long id) {
+
+        Long authorId = jwtUtil.extractUserId(authHeader);
+        if (authorId == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+        }
+
+        return tourRepository.findById(id).map(tour -> {
+            if (!tour.getAuthorId().equals(authorId)) {
+                return ResponseEntity.status(403).body(Map.of("error", "Forbidden"));
+            }
+            if (!"PUBLISHED".equals(tour.getStatus())) {
+                return ResponseEntity.status(400).body(Map.of("error",
+                        "Only published tours can be archived"));
+            }
+            tour.setStatus("ARCHIVED");
+            tour.setArchivedAt(LocalDateTime.now());
+            return ResponseEntity.ok((Object) TourResponse.from(tourRepository.save(tour)));
+        }).orElse(ResponseEntity.status(404).body(Map.of("error", "Tour not found")));
+    }
+
+    // Reaktiviraj turu (ARCHIVED → PUBLISHED)
+    @PostMapping("/{id}/activate")
+    public ResponseEntity<?> activateTour(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long id) {
+
+        Long authorId = jwtUtil.extractUserId(authHeader);
+        if (authorId == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+        }
+
+        return tourRepository.findById(id).map(tour -> {
+            if (!tour.getAuthorId().equals(authorId)) {
+                return ResponseEntity.status(403).body(Map.of("error", "Forbidden"));
+            }
+            if (!"ARCHIVED".equals(tour.getStatus())) {
+                return ResponseEntity.status(400).body(Map.of("error",
+                        "Only archived tours can be activated"));
+            }
+            tour.setStatus("PUBLISHED");
+            tour.setArchivedAt(null);
+            return ResponseEntity.ok((Object) TourResponse.from(tourRepository.save(tour)));
+        }).orElse(ResponseEntity.status(404).body(Map.of("error", "Tour not found")));
+    }
+
+    // ─── Trajanja ture ─────────────────────────────────────────────────────────
+
+    @PostMapping("/{tourId}/durations")
+    public ResponseEntity<?> addDuration(
             @RequestHeader("Authorization") String authHeader,
             @PathVariable Long tourId,
-            @Valid @RequestBody CreateKeyPointRequest req) {
+            @Valid @RequestBody CreateTourDurationRequest req) {
 
         Long authorId = jwtUtil.extractUserId(authHeader);
         if (authorId == null) {
@@ -173,19 +307,65 @@ public class TourController {
             return ResponseEntity.status(403).body(Map.of("error", "Forbidden"));
         }
 
-        KeyPoint kp = new KeyPoint();
-        kp.setTourId(tourId);
-        kp.setName(req.getName());
-        kp.setDescription(req.getDescription());
-        kp.setImageUrl(req.getImageUrl());
-        kp.setLatitude(req.getLatitude());
-        kp.setLongitude(req.getLongitude());
+        TourDuration td = new TourDuration();
+        td.setTourId(tourId);
+        td.setTransportType(req.getTransportType());
+        td.setDurationInMinutes(req.getDurationInMinutes());
 
-        KeyPoint saved = keyPointRepository.save(kp);
-        return ResponseEntity.status(201).body(KeyPointResponse.from(saved));
+        return ResponseEntity.status(201).body(TourDurationResponse.from(tourDurationRepository.save(td)));
     }
 
-    // GET /tours/{tourId}/keypoints
+    @GetMapping("/{tourId}/durations")
+    public ResponseEntity<?> getDurations(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long tourId) {
+
+        Long userId = jwtUtil.extractUserId(authHeader);
+        if (userId == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+        }
+
+        List<TourDurationResponse> durations = tourDurationRepository.findByTourId(tourId)
+                .stream().map(TourDurationResponse::from).collect(Collectors.toList());
+
+        return ResponseEntity.ok(durations);
+    }
+
+    // ─── Ključne tačke ─────────────────────────────────────────────────────────
+
+    @PostMapping("/{tourId}/keypoints")
+    public ResponseEntity<?> addKeyPoint(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable Long tourId,
+            @Valid @RequestBody CreateKeyPointRequest req) {
+
+        Long authorId = jwtUtil.extractUserId(authHeader);
+        if (authorId == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+        }
+
+        return tourRepository.findById(tourId).map(tour -> {
+            if (!tour.getAuthorId().equals(authorId)) {
+                return ResponseEntity.status(403).body(Map.of("error", "Forbidden"));
+            }
+
+            KeyPoint kp = new KeyPoint();
+            kp.setTourId(tourId);
+            kp.setName(req.getName());
+            kp.setDescription(req.getDescription());
+            kp.setImageUrl(req.getImageUrl());
+            kp.setLatitude(req.getLatitude());
+            kp.setLongitude(req.getLongitude());
+
+            KeyPoint saved = keyPointRepository.save(kp);
+
+            // Recalculate length after adding
+            recalculateLength(tour);
+
+            return ResponseEntity.status(201).body((Object) KeyPointResponse.from(saved));
+        }).orElse(ResponseEntity.status(404).body(Map.of("error", "Tour not found")));
+    }
+
     @GetMapping("/{tourId}/keypoints")
     public ResponseEntity<?> getKeyPoints(
             @RequestHeader("Authorization") String authHeader,
@@ -205,34 +385,6 @@ public class TourController {
         return ResponseEntity.ok(keyPoints);
     }
 
-    // DELETE /tours/{tourId}/keypoints/{keyPointId}
-    @DeleteMapping("/{tourId}/keypoints/{keyPointId}")
-    public ResponseEntity<?> deleteKeyPoint(
-            @RequestHeader("Authorization") String authHeader,
-            @PathVariable Long tourId,
-            @PathVariable Long keyPointId) {
-
-        Long authorId = jwtUtil.extractUserId(authHeader);
-        if (authorId == null) {
-            return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
-        }
-
-        boolean tourOwned = tourRepository.findById(tourId)
-                .map(t -> t.getAuthorId().equals(authorId))
-                .orElse(false);
-        if (!tourOwned) {
-            return ResponseEntity.status(403).body(Map.of("error", "Forbidden"));
-        }
-
-        if (!keyPointRepository.existsById(keyPointId)) {
-            return ResponseEntity.status(404).body(Map.of("error", "Key point not found"));
-        }
-
-        keyPointRepository.deleteById(keyPointId);
-        return ResponseEntity.noContent().build();
-    }
-
-    // PUT /tours/{tourId}/keypoints/{keyPointId}
     @PutMapping("/{tourId}/keypoints/{keyPointId}")
     public ResponseEntity<?> updateKeyPoint(
             @RequestHeader("Authorization") String authHeader,
@@ -258,33 +410,45 @@ public class TourController {
             kp.setImageUrl(req.getImageUrl());
             kp.setLatitude(req.getLatitude());
             kp.setLongitude(req.getLongitude());
-            return ResponseEntity.ok((Object) KeyPointResponse.from(keyPointRepository.save(kp)));
+            KeyPoint saved = keyPointRepository.save(kp);
+
+            tourRepository.findById(tourId).ifPresent(this::recalculateLength);
+
+            return ResponseEntity.ok((Object) KeyPointResponse.from(saved));
         }).orElse(ResponseEntity.status(404).body(Map.of("error", "Key point not found")));
     }
 
-    // GET /tours/{tourId}
-    @GetMapping("/{tourId}")
-    public ResponseEntity<?> getTour(
+    @DeleteMapping("/{tourId}/keypoints/{keyPointId}")
+    public ResponseEntity<?> deleteKeyPoint(
             @RequestHeader("Authorization") String authHeader,
-            @PathVariable Long tourId) {
+            @PathVariable Long tourId,
+            @PathVariable Long keyPointId) {
 
-        Long userId = jwtUtil.extractUserId(authHeader);
-        if (userId == null) {
+        Long authorId = jwtUtil.extractUserId(authHeader);
+        if (authorId == null) {
             return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
         }
 
-        return tourRepository.findById(tourId).map(tour -> {
-            String img = keyPointRepository.findByTourIdOrderById(tour.getId())
-                    .stream()
-                    .map(kp -> kp.getImageUrl())
-                    .filter(url -> url != null && !url.isBlank())
-                    .findFirst()
-                    .orElse(null);
-            return ResponseEntity.ok((Object) TourResponse.from(tour, img));
-        }).orElse(ResponseEntity.status(404).body(Map.of("error", "Tour not found")));
+        boolean tourOwned = tourRepository.findById(tourId)
+                .map(t -> t.getAuthorId().equals(authorId))
+                .orElse(false);
+        if (!tourOwned) {
+            return ResponseEntity.status(403).body(Map.of("error", "Forbidden"));
+        }
+
+        if (!keyPointRepository.existsById(keyPointId)) {
+            return ResponseEntity.status(404).body(Map.of("error", "Key point not found"));
+        }
+
+        keyPointRepository.deleteById(keyPointId);
+
+        tourRepository.findById(tourId).ifPresent(this::recalculateLength);
+
+        return ResponseEntity.noContent().build();
     }
 
-    // POST /tours/{tourId}/reviews
+    // ─── Recenzije ─────────────────────────────────────────────────────────────
+
     @PostMapping("/{tourId}/reviews")
     public ResponseEntity<?> addReview(
             @RequestHeader("Authorization") String authHeader,
@@ -314,7 +478,6 @@ public class TourController {
         return ResponseEntity.status(201).body(ReviewResponse.from(saved));
     }
 
-    // GET /tours/{tourId}/reviews
     @GetMapping("/{tourId}/reviews")
     public ResponseEntity<?> getReviews(
             @RequestHeader("Authorization") String authHeader,
@@ -332,5 +495,55 @@ public class TourController {
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(reviews);
+    }
+
+    // ─── Helperi ───────────────────────────────────────────────────────────────
+
+    private void recalculateLength(Tour tour) {
+        List<KeyPoint> kps = keyPointRepository.findByTourIdOrderById(tour.getId());
+        if (kps.size() >= 2) {
+            try {
+                String coords = kps.stream()
+                        .map(kp -> kp.getLongitude() + "," + kp.getLatitude())
+                        .collect(Collectors.joining(";"));
+                String url = "https://router.project-osrm.org/route/v1/driving/" + coords + "?overview=false";
+
+                java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
+                java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                        .uri(java.net.URI.create(url))
+                        .timeout(java.time.Duration.ofSeconds(5))
+                        .build();
+                java.net.http.HttpResponse<String> response = client.send(
+                        request, java.net.http.HttpResponse.BodyHandlers.ofString());
+
+                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                com.fasterxml.jackson.databind.JsonNode root = mapper.readTree(response.body());
+                double meters = root.path("routes").get(0).path("distance").asDouble();
+                tour.setLengthInKm(Math.round(meters / 10.0) / 100.0);
+            } catch (Exception e) {
+                tour.setLengthInKm(haversineTotalKm(kps));
+            }
+        } else {
+            tour.setLengthInKm(null);
+        }
+        tourRepository.save(tour);
+    }
+
+    private double haversineTotalKm(List<KeyPoint> kps) {
+        double total = 0;
+        for (int i = 1; i < kps.size(); i++) {
+            double lat1 = kps.get(i - 1).getLatitude(), lon1 = kps.get(i - 1).getLongitude();
+            double lat2 = kps.get(i).getLatitude(),     lon2 = kps.get(i).getLongitude();
+            double dLat = Math.toRadians(lat2 - lat1), dLon = Math.toRadians(lon2 - lon1);
+            double a = Math.sin(dLat/2)*Math.sin(dLat/2)
+                    + Math.cos(Math.toRadians(lat1))*Math.cos(Math.toRadians(lat2))
+                    * Math.sin(dLon/2)*Math.sin(dLon/2);
+            total += 6371.0 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+        return Math.round(total * 100.0) / 100.0;
+    }
+
+    private boolean isBlank(String s) {
+        return s == null || s.isBlank();
     }
 }

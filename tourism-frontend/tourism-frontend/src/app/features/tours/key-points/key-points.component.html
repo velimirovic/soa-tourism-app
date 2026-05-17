@@ -5,14 +5,28 @@
     <button class="kp-back-btn" (click)="goBack()">
       <span class="material-icons">arrow_back</span>
     </button>
-    <div>
+    <div class="kp-header__info">
       <h2 class="kp-title">
         <span class="material-icons">place</span>
         Key Points
+        <span *ngIf="tour" class="kp-title__tour-name">— {{ tour.name }}</span>
       </h2>
       <p class="kp-subtitle">
         {{ editingKp ? 'Click on the map to pick a new position for the selected key point.' : 'Click on the map to pin a location, then fill in the details.' }}
       </p>
+    </div>
+    <!-- Tour status + length badge -->
+    <div class="kp-tour-meta" *ngIf="tour">
+      <span class="kp-status-badge kp-status-badge--{{ tour.status?.toLowerCase() }}">
+        <span class="material-icons">
+          {{ tour.status === 'PUBLISHED' ? 'public' : tour.status === 'ARCHIVED' ? 'inventory_2' : 'edit_note' }}
+        </span>
+        {{ tour.status }}
+      </span>
+      <span class="kp-length-badge" *ngIf="tour.lengthInKm">
+        <span class="material-icons">straighten</span>
+        {{ tour.lengthInKm }} km
+      </span>
     </div>
   </div>
 
@@ -22,7 +36,7 @@
     <!-- Left panel -->
     <div class="kp-panel">
 
-      <!-- EDIT form (shown when editing an existing kp) -->
+      <!-- EDIT form -->
       <div class="kp-form-card kp-form-card--edit" *ngIf="editingKp">
         <h3 class="kp-form-title">
           <span class="material-icons">edit_location</span>
@@ -78,7 +92,7 @@
         </div>
       </div>
 
-      <!-- ADD form (shown when not editing) -->
+      <!-- ADD form -->
       <div class="kp-form-card" *ngIf="!editingKp">
         <h3 class="kp-form-title">
           <span class="material-icons">add_location</span>
@@ -178,6 +192,84 @@
 
       <div class="kp-loading" *ngIf="loading">
         <span class="material-icons spinning">sync</span> Loading…
+      </div>
+
+      <!-- ── Durations section ──────────────────────────────────── -->
+      <div class="kp-durations-card">
+        <h3 class="kp-form-title">
+          <span class="material-icons">schedule</span>
+          Tour Durations
+        </h3>
+
+        <!-- Existing durations -->
+        <div class="kp-dur-list" *ngIf="durations.length > 0">
+          <div class="kp-dur-item" *ngFor="let d of durations">
+            <span class="material-icons kp-dur-item__icon">{{ transportIcon(d.transportType) }}</span>
+            <span class="kp-dur-item__label">{{ transportLabel(d.transportType) }}</span>
+            <span class="kp-dur-item__time">{{ d.durationInMinutes }} min</span>
+          </div>
+        </div>
+        <div class="kp-dur-empty" *ngIf="durations.length === 0">
+          <span class="material-icons">info_outline</span>
+          No durations yet. Add at least one to publish.
+        </div>
+
+        <!-- Add duration form -->
+        <div class="kp-dur-form">
+          <div class="kp-transport-row">
+            <button
+              *ngFor="let t of transportTypes"
+              class="kp-transport-btn"
+              [class.kp-transport-btn--active]="newTransportType === t"
+              type="button"
+              (click)="newTransportType = t">
+              <span class="material-icons">{{ transportIcon(t) }}</span>
+              {{ transportLabel(t) }}
+            </button>
+          </div>
+
+          <div class="kp-dur-input-row">
+            <input class="kp-input" type="number" min="1"
+              [(ngModel)]="newDurationMinutes"
+              placeholder="Minutes (e.g. 90)" />
+            <button class="kp-submit-btn kp-submit-btn--sm" (click)="addDuration()" [disabled]="durationSaving">
+              <span class="material-icons">{{ durationSaving ? 'hourglass_top' : 'add' }}</span>
+              Add
+            </button>
+          </div>
+
+          <div class="kp-form-error" *ngIf="durationError">
+            <span class="material-icons">error_outline</span> {{ durationError }}
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Publish section ───────────────────────────────────── -->
+      <div class="kp-publish-card" *ngIf="tour && tour.status === 'DRAFT'">
+        <h3 class="kp-form-title kp-form-title--publish">
+          <span class="material-icons">public</span>
+          Publish Tour
+        </h3>
+        <p class="kp-publish-hint">
+          Requirements: name, description, difficulty, ≥1 tag, ≥2 key points, ≥1 duration.
+        </p>
+        <div class="kp-form-error" *ngIf="publishError">
+          <span class="material-icons">error_outline</span> {{ publishError }}
+        </div>
+        <button class="kp-publish-btn" (click)="publishTour()" [disabled]="publishing">
+          <span class="material-icons">{{ publishing ? 'hourglass_top' : 'public' }}</span>
+          {{ publishing ? 'Publishing…' : 'Publish Tour' }}
+        </button>
+      </div>
+
+      <div class="kp-published-note" *ngIf="tour && tour.status === 'PUBLISHED'">
+        <span class="material-icons">check_circle</span>
+        This tour is published and visible to tourists.
+      </div>
+
+      <div class="kp-published-note kp-published-note--archived" *ngIf="tour && tour.status === 'ARCHIVED'">
+        <span class="material-icons">inventory_2</span>
+        This tour is archived. Go to My Tours to re-activate it.
       </div>
 
     </div>

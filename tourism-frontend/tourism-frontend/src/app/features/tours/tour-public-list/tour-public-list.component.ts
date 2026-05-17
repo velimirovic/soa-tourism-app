@@ -39,6 +39,14 @@ export class TourPublicListComponent implements OnInit {
     return difficulty?.toLowerCase() ?? 'easy';
   }
 
+  transportIcon(type: string): string {
+    switch (type) {
+      case 'BICYCLE': return 'directions_bike';
+      case 'CAR':     return 'directions_car';
+      default:        return 'directions_walk';
+    }
+  }
+
   goToDetail(tourId: number): void {
     this.router.navigate(['/tours', tourId]);
   }
