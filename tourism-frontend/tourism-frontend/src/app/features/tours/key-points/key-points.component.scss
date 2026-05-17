@@ -10,6 +10,53 @@
   align-items: flex-start;
   gap: 14px;
   margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.kp-header__info { flex: 1; min-width: 0; }
+
+.kp-title__tour-name {
+  font-weight: 500;
+  color: #888;
+  font-size: 0.9em;
+}
+
+.kp-tour-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+.kp-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.2rem 0.65rem;
+  border-radius: 20px;
+
+  .material-icons { font-size: 0.95rem; }
+
+  &--draft     { background: #f1f5f9; color: #718096; }
+  &--published { background: #d1fae5; color: #065f46; }
+  &--archived  { background: #fef3c7; color: #92400e; }
+}
+
+.kp-length-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.2rem 0.65rem;
+  border-radius: 20px;
+  background: #eff6ff;
+  color: #1d4ed8;
+
+  .material-icons { font-size: 0.95rem; }
 }
 
 .kp-back-btn {
@@ -472,4 +519,159 @@
 @keyframes spin {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
+}
+
+// ── Durations card ────────────────────────────────────────────
+.kp-durations-card {
+  background: #fff;
+  border: 1px solid #ede8f8;
+  border-radius: 16px;
+  padding: 22px 20px;
+}
+
+.kp-dur-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.kp-dur-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-radius: 9px;
+  border: 1px solid #e2e8f0;
+
+  &__icon  { font-size: 1.1rem; color: #7c3aed; }
+  &__label { font-size: 0.88rem; font-weight: 600; color: #1a202c; flex: 1; }
+  &__time  { font-size: 0.85rem; color: #4a5568; font-weight: 500; }
+}
+
+.kp-dur-empty {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.83rem;
+  color: #718096;
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 14px;
+
+  .material-icons { font-size: 1rem; color: #c084fc; }
+}
+
+.kp-dur-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.kp-transport-row {
+  display: flex;
+  gap: 7px;
+}
+
+.kp-transport-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 7px 6px;
+  border-radius: 20px;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  color: #718096;
+  transition: background 0.18s, border-color 0.18s;
+
+  .material-icons { font-size: 1rem; }
+
+  &--active {
+    background: #ede9f8;
+    border-color: #a78bfa;
+    color: #6d28d9;
+  }
+
+  &:not(.kp-transport-btn--active):hover { background: #f1f5f9; border-color: #cbd5e0; }
+}
+
+.kp-dur-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+
+  .kp-input { flex: 1; }
+}
+
+.kp-submit-btn--sm {
+  width: auto;
+  flex-shrink: 0;
+  padding: 9px 16px;
+  font-size: 13px;
+}
+
+// ── Publish card ──────────────────────────────────────────────
+.kp-publish-card {
+  background: linear-gradient(135deg, #faf9ff 0%, #f0fdf4 100%);
+  border: 1.5px solid #6ee7b7;
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.kp-form-title--publish .material-icons { color: #059669; }
+
+.kp-publish-hint {
+  font-size: 0.82rem;
+  color: #4a5568;
+  margin: -8px 0 14px;
+  line-height: 1.5;
+}
+
+.kp-publish-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  justify-content: center;
+  background: #059669;
+  color: #fff;
+  border: none;
+  border-radius: 22px;
+  padding: 10px 20px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.2s;
+
+  .material-icons { font-size: 17px; }
+  &:hover:not(:disabled) { opacity: 0.85; }
+  &:disabled { opacity: 0.55; cursor: not-allowed; }
+}
+
+.kp-published-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #d1fae5;
+  color: #065f46;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+
+  .material-icons { font-size: 1.2rem; }
+
+  &--archived {
+    background: #fef3c7;
+    color: #92400e;
+  }
 }

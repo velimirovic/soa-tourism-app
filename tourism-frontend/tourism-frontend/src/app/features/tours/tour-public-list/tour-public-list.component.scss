@@ -160,9 +160,30 @@
     font-weight: 500;
   }
 
+  &__durations {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    padding: 0.25rem 1.25rem 0;
+  }
+
+  &__dur-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 0.18rem 0.6rem;
+    background: #eff6ff;
+    color: #1d4ed8;
+    border-radius: 12px;
+    font-size: 0.76rem;
+    font-weight: 500;
+
+    .material-icons { font-size: 0.85rem; }
+  }
+
   &__footer {
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
     align-items: center;
     margin-top: auto;
     padding: 0.75rem 1.25rem 1rem;
@@ -177,5 +198,16 @@
     color: #a0aec0;
 
     .material-icons { font-size: 0.85rem; }
+  }
+
+  &__length {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #4a5568;
+
+    .material-icons { font-size: 0.9rem; color: #a78bfa; }
   }
 }

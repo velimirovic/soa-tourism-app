@@ -50,6 +50,12 @@ public class Tour {
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    private LocalDateTime publishedAt;
+
+    private LocalDateTime archivedAt;
+
+    private Double lengthInKm;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -76,4 +82,13 @@ public class Tour {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public LocalDateTime getPublishedAt() { return publishedAt; }
+    public void setPublishedAt(LocalDateTime publishedAt) { this.publishedAt = publishedAt; }
+
+    public LocalDateTime getArchivedAt() { return archivedAt; }
+    public void setArchivedAt(LocalDateTime archivedAt) { this.archivedAt = archivedAt; }
+
+    public Double getLengthInKm() { return lengthInKm; }
+    public void setLengthInKm(Double lengthInKm) { this.lengthInKm = lengthInKm; }
 }

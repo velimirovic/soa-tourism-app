@@ -55,10 +55,22 @@
         <span class="tc__tag" *ngFor="let tag of tour.tags">{{ tag }}</span>
       </div>
 
+      <!-- Durations -->
+      <div class="tc__durations" *ngIf="tour.durations && tour.durations.length > 0">
+        <span class="tc__dur-chip" *ngFor="let d of tour.durations">
+          <span class="material-icons">{{ transportIcon(d.transportType) }}</span>
+          {{ d.durationInMinutes }} min
+        </span>
+      </div>
+
       <div class="tc__footer">
         <span class="tc__date">
           <span class="material-icons">calendar_today</span>
           {{ tour.createdAt | date: 'dd.MM.yyyy' }}
+        </span>
+        <span class="tc__length" *ngIf="tour.lengthInKm">
+          <span class="material-icons">straighten</span>
+          {{ tour.lengthInKm }} km
         </span>
       </div>
 
