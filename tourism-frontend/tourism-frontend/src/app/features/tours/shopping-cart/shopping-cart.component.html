@@ -1,0 +1,132 @@
+<div class="sc-page">
+
+  <!-- Header -->
+  <div class="sc-header">
+    <div class="sc-header__icon">
+      <span class="material-icons">shopping_cart</span>
+    </div>
+    <div>
+      <h2 class="sc-header__title">Shopping Cart</h2>
+      <p class="sc-header__sub">Review your selected tours before purchasing.</p>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="sc-state">
+    <span class="material-icons spinning">sync</span> Loading cart…
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="error" class="sc-state sc-state--error">
+    <span class="material-icons">error</span> {{ error }}
+  </div>
+
+  <!-- SUCCESS: Show tokens after checkout -->
+  <ng-container *ngIf="purchasedTokens">
+    <div class="sc-success">
+      <div class="sc-success__icon">
+        <span class="material-icons">check_circle</span>
+      </div>
+      <h3 class="sc-success__title">Purchase Complete!</h3>
+      <p class="sc-success__sub">
+        You have received {{ purchasedTokens.length }} purchase token{{ purchasedTokens.length !== 1 ? 's' : '' }}.
+        All key points are now unlocked for your purchased tours.
+      </p>
+
+      <div class="sc-tokens">
+        <div class="sc-token-card" *ngFor="let t of purchasedTokens">
+          <div class="sc-token-card__top">
+            <span class="material-icons sc-token-card__check">confirmation_number</span>
+            <span class="sc-token-card__name">{{ t.tourName }}</span>
+          </div>
+          <div class="sc-token-card__token">{{ t.token }}</div>
+          <div class="sc-token-card__date">
+            Purchased: {{ t.purchasedAt | date: 'dd.MM.yyyy HH:mm' }}
+          </div>
+          <button class="sc-btn sc-btn--outline" (click)="goToTour(t.tourId)">
+            <span class="material-icons">map</span>
+            View Tour
+          </button>
+        </div>
+      </div>
+
+      <button class="sc-btn sc-btn--primary" (click)="goToPurchases()">
+        <span class="material-icons">receipt_long</span>
+        View All Purchases
+      </button>
+    </div>
+  </ng-container>
+
+  <!-- Cart content -->
+  <ng-container *ngIf="!loading && !error && !purchasedTokens && cart">
+
+    <!-- Empty cart -->
+    <div *ngIf="cart.items.length === 0" class="sc-empty">
+      <span class="material-icons sc-empty__icon">remove_shopping_cart</span>
+      <p class="sc-empty__text">Your cart is empty.</p>
+      <button class="sc-btn sc-btn--primary" (click)="goToTours()">
+        <span class="material-icons">explore</span>
+        Browse Tours
+      </button>
+    </div>
+
+    <!-- Items -->
+    <div *ngIf="cart.items.length > 0" class="sc-content">
+
+      <div class="sc-items">
+        <div class="sc-item" *ngFor="let item of cart.items">
+          <div class="sc-item__info">
+            <div class="sc-item__name">{{ item.tourName }}</div>
+            <div class="sc-item__price">
+              <span class="material-icons">payments</span>
+              {{ item.price === 0 ? 'Free' : (item.price | number:'1.0-0') + ' RSD' }}
+            </div>
+          </div>
+          <div class="sc-item__actions">
+            <button class="sc-item__view-btn" (click)="goToTour(item.tourId)">
+              <span class="material-icons">open_in_new</span>
+            </button>
+            <button class="sc-item__remove-btn"
+              [disabled]="removingTourId === item.tourId"
+              (click)="removeItem(item.tourId)">
+              <span class="material-icons">{{ removingTourId === item.tourId ? 'hourglass_top' : 'delete_outline' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary -->
+      <div class="sc-summary">
+        <div class="sc-summary__row">
+          <span class="sc-summary__label">Items</span>
+          <span class="sc-summary__value">{{ cart.items.length }}</span>
+        </div>
+        <div class="sc-summary__row sc-summary__row--total">
+          <span class="sc-summary__label">Total</span>
+          <span class="sc-summary__total">
+            {{ cart.totalPrice === 0 ? 'Free' : (cart.totalPrice | number:'1.0-0') + ' RSD' }}
+          </span>
+        </div>
+
+        <div *ngIf="checkoutError" class="sc-error">
+          <span class="material-icons">error_outline</span> {{ checkoutError }}
+        </div>
+
+        <button class="sc-btn sc-btn--primary sc-btn--full"
+          (click)="checkout()"
+          [disabled]="checkingOut">
+          <span class="material-icons">{{ checkingOut ? 'hourglass_top' : 'payment' }}</span>
+          {{ checkingOut ? 'Processing…' : 'Checkout' }}
+        </button>
+
+        <button class="sc-btn sc-btn--ghost sc-btn--full" (click)="goToTours()">
+          <span class="material-icons">arrow_back</span>
+          Continue Browsing
+        </button>
+      </div>
+
+    </div>
+
+  </ng-container>
+
+</div>

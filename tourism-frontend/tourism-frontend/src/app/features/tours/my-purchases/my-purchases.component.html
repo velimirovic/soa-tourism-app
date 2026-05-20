@@ -1,0 +1,65 @@
+<div class="mp-page">
+
+  <!-- Header -->
+  <div class="mp-header">
+    <div class="mp-header__icon">
+      <span class="material-icons">receipt_long</span>
+    </div>
+    <div>
+      <h2 class="mp-header__title">My Purchases</h2>
+      <p class="mp-header__sub">Tours you have purchased. All key points are unlocked.</p>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="mp-state">
+    <span class="material-icons spinning">sync</span> Loading purchases…
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="error" class="mp-state mp-state--error">
+    <span class="material-icons">error</span> {{ error }}
+  </div>
+
+  <!-- Empty -->
+  <div *ngIf="!loading && !error && tokens.length === 0" class="mp-empty">
+    <span class="material-icons mp-empty__icon">explore_off</span>
+    <p class="mp-empty__text">You haven't purchased any tours yet.</p>
+    <button class="mp-btn mp-btn--primary" (click)="goToTours()">
+      <span class="material-icons">explore</span>
+      Browse Tours
+    </button>
+  </div>
+
+  <!-- Token list -->
+  <div *ngIf="!loading && !error && tokens.length > 0" class="mp-list">
+
+    <div class="mp-card" *ngFor="let t of tokens">
+      <div class="mp-card__header">
+        <span class="material-icons mp-card__icon">confirmation_number</span>
+        <div class="mp-card__title-wrap">
+          <div class="mp-card__name">{{ t.tourName }}</div>
+          <div class="mp-card__date">
+            <span class="material-icons">calendar_today</span>
+            Purchased: {{ t.purchasedAt | date: 'dd.MM.yyyy HH:mm' }}
+          </div>
+        </div>
+        <span class="mp-card__badge">Purchased</span>
+      </div>
+
+      <div class="mp-card__token-wrap">
+        <span class="mp-card__token-label">Purchase Token</span>
+        <div class="mp-card__token">{{ t.token }}</div>
+      </div>
+
+      <div class="mp-card__actions">
+        <button class="mp-btn mp-btn--primary" (click)="goToTour(t.tourId)">
+          <span class="material-icons">map</span>
+          View Full Tour
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+</div>

@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { PurchaseService } from '../../../core/services/purchase.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -8,9 +9,24 @@ import { AuthService } from '../../../core/services/auth.service';
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.scss'
 })
-export class SidebarComponent {
+export class SidebarComponent implements OnInit {
 
-  constructor(private authService: AuthService, private router: Router) {}
+  cartCount = 0;
+
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+    private purchaseService: PurchaseService
+  ) {}
+
+  ngOnInit(): void {
+    this.purchaseService.cartCount$.subscribe(count => {
+      this.cartCount = count;
+    });
+    if (this.isTourist) {
+      this.purchaseService.refreshCartCount();
+    }
+  }
 
   get isAdmin(): boolean {
     return this.authService.getUser()?.role === 'Admin';
