@@ -17,6 +17,27 @@ public class ProfileController : ControllerBase
         _db = db;
     }
 
+    // POST /stakeholders/profile/init  — SAGA step: called by auth-service after user creation
+    [HttpPost("init")]
+    public async Task<IActionResult> InitProfile([FromBody] InitProfileDto dto)
+    {
+        var existing = await _db.UserProfiles.FirstOrDefaultAsync(p => p.UserId == dto.UserId);
+        if (existing is not null)
+            return Ok(ToDto(existing));
+
+        var profile = new UserProfile
+        {
+            UserId    = dto.UserId,
+            FirstName = "",
+            LastName  = ""
+        };
+
+        _db.UserProfiles.Add(profile);
+        await _db.SaveChangesAsync();
+
+        return CreatedAtAction(nameof(GetProfile), new { userId = profile.UserId }, ToDto(profile));
+    }
+
     // GET /profile/{userId}
     [HttpGet("{userId:long}")]
     public async Task<IActionResult> GetProfile(long userId)

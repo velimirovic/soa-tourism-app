@@ -80,8 +80,10 @@ services:
       DATABASE_NAME: auth
       JWT_KEY: change-me-in-production-min32chars!!
       JWT_ISSUER: AuthService
+      STAKEHOLDERS_SERVICE_URL: http://stakeholders-service:80
     depends_on:
       - auth-db
+      - stakeholders-service
 
   auth-db:
     image: postgres:16
@@ -210,8 +212,10 @@ services:
       DATABASE_USER: postgres
       DATABASE_PASSWORD: super
       DATABASE_NAME: purchases
+      TOUR_SERVICE_URL: http://tour-service:8080
     depends_on:
       - purchase-db
+      - tour-service
 
   purchase-db:
     image: postgres:16

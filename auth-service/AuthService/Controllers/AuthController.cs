@@ -19,13 +19,17 @@ public class AuthController : ControllerBase
     private readonly IConfiguration _config;
     private readonly string _jwtKey;
     private readonly string _jwtIssuer;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly string _stakeholdersUrl;
 
-    public AuthController(AuthDbContext db, IConfiguration config)
+    public AuthController(AuthDbContext db, IConfiguration config, IHttpClientFactory httpClientFactory)
     {
         _db = db;
         _config = config;
-        _jwtKey    = Environment.GetEnvironmentVariable("JWT_KEY")    ?? config["Jwt:Key"]    ?? "change-me-in-production-min32chars!!";
-        _jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? config["Jwt:Issuer"] ?? "AuthService";
+        _jwtKey              = Environment.GetEnvironmentVariable("JWT_KEY")                ?? config["Jwt:Key"]    ?? "change-me-in-production-min32chars!!";
+        _jwtIssuer           = Environment.GetEnvironmentVariable("JWT_ISSUER")             ?? config["Jwt:Issuer"] ?? "AuthService";
+        _stakeholdersUrl     = Environment.GetEnvironmentVariable("STAKEHOLDERS_SERVICE_URL") ?? "http://stakeholders-service:80";
+        _httpClientFactory   = httpClientFactory;
     }
 
     // POST /auth/register
@@ -62,8 +66,34 @@ public class AuthController : ControllerBase
             CreatedAt    = DateTime.UtcNow
         };
 
+        // SAGA korak 1: sačuvaj korisnika u auth-service bazi
         _db.Users.Add(user);
         await _db.SaveChangesAsync();
+
+        // SAGA korak 2: kreiraj profil u stakeholders-service
+        try
+        {
+            var client = _httpClientFactory.CreateClient();
+            var response = await client.PostAsJsonAsync(
+                $"{_stakeholdersUrl}/stakeholders/profile/init",
+                new { UserId = user.Id, Username = user.Username, Role = user.Role }
+            );
+
+            if (!response.IsSuccessStatusCode)
+                throw new Exception($"Stakeholders service returned {response.StatusCode}");
+        }
+        catch (Exception ex)
+        {
+            // SAGA kompenzacija: obriši korisnika iz auth baze
+            _db.Users.Remove(user);
+            await _db.SaveChangesAsync();
+
+            return StatusCode(503, new
+            {
+                error  = "Registracija nije uspela: profil korisnika nije mogao biti kreiran.",
+                detail = ex.Message
+            });
+        }
 
         var token = GenerateJwt(user);
 
