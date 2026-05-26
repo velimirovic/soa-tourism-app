@@ -6,6 +6,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+<<<<<<< HEAD
+=======
+import org.springframework.beans.factory.annotation.Value;
+>>>>>>> feat/shoppingCart
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -41,6 +45,12 @@ import jakarta.validation.Valid;
 @RequestMapping("/tours")
 public class TourController {
 
+<<<<<<< HEAD
+=======
+    @Value("${purchase.service.base-url:http://purchase-service:8080}")
+    private String purchaseServiceBaseUrl;
+
+>>>>>>> feat/shoppingCart
     private final TourRepository tourRepository;
     private final KeyPointRepository keyPointRepository;
     private final ReviewRepository reviewRepository;
@@ -371,6 +381,7 @@ public class TourController {
             @RequestHeader("Authorization") String authHeader,
             @PathVariable Long tourId) {
 
+<<<<<<< HEAD
         Long authorId = jwtUtil.extractUserId(authHeader);
         if (authorId == null) {
             return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
@@ -383,6 +394,48 @@ public class TourController {
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(keyPoints);
+=======
+        Long userId = jwtUtil.extractUserId(authHeader);
+        if (userId == null) {
+            return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+        }
+
+        String role = jwtUtil.extractRole(authHeader);
+        boolean isTourist = "Tourist".equalsIgnoreCase(role);
+
+        List<KeyPoint> kps = keyPointRepository.findByTourIdOrderById(tourId);
+
+        if (isTourist && !hasPurchasedTour(userId, tourId, authHeader)) {
+            // Turista koji nije kupio turu vidi samo prvu (početnu) tačku
+            List<KeyPointResponse> startingPoint = kps.isEmpty()
+                    ? List.of()
+                    : List.of(KeyPointResponse.from(kps.get(0)));
+            return ResponseEntity.ok(startingPoint);
+        }
+
+        return ResponseEntity.ok(kps.stream().map(KeyPointResponse::from).collect(Collectors.toList()));
+    }
+
+    private boolean hasPurchasedTour(Long touristId, Long tourId, String authHeader) {
+        try {
+            String url = purchaseServiceBaseUrl + "/purchases/purchase-tokens/check?tourId=" + tourId;
+            java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
+            java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                    .uri(java.net.URI.create(url))
+                    .header("Authorization", authHeader)
+                    .timeout(java.time.Duration.ofSeconds(3))
+                    .build();
+            java.net.http.HttpResponse<String> response = client.send(
+                    request, java.net.http.HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200) {
+                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                return mapper.readTree(response.body()).path("purchased").asBoolean(false);
+            }
+        } catch (Exception ignored) {
+            // Ako purchase service nije dostupan, turista ne može vidjeti sve ključne tačke
+        }
+        return false;
+>>>>>>> feat/shoppingCart
     }
 
     @PutMapping("/{tourId}/keypoints/{keyPointId}")
