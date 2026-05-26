@@ -20,6 +20,11 @@ import { KeyPointsComponent }           from './features/tours/key-points/key-po
 import { TourPublicListComponent }      from './features/tours/tour-public-list/tour-public-list.component';
 import { TourDetailComponent }          from './features/tours/tour-detail/tour-detail.component';
 import { PositionSimulatorComponent }   from './features/position-simulator/position-simulator.component';
+<<<<<<< HEAD
+=======
+import { ShoppingCartComponent }        from './features/tours/shopping-cart/shopping-cart.component';
+import { MyPurchasesComponent }         from './features/tours/my-purchases/my-purchases.component';
+>>>>>>> feat/shoppingCart
 
 const routes: Routes = [
   { path: 'login',    component: LoginComponent },
@@ -54,6 +59,13 @@ const routes: Routes = [
 
       // Position simulator (Tourist)
       { path: 'simulator',        component: PositionSimulatorComponent, canActivate: [AuthGuard] },
+<<<<<<< HEAD
+=======
+
+      // Shopping cart & purchases (Tourist)
+      { path: 'cart',             component: ShoppingCartComponent,      canActivate: [AuthGuard] },
+      { path: 'purchases',        component: MyPurchasesComponent,       canActivate: [AuthGuard] },
+>>>>>>> feat/shoppingCart
     ]
   },
 
