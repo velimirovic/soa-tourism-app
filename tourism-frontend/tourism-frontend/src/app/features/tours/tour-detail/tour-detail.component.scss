@@ -11,11 +11,6 @@
   gap: 14px;
   align-items: flex-start;
   margin-bottom: 28px;
-<<<<<<< HEAD
-=======
-
-  &__body { flex: 1; }
->>>>>>> feat/shoppingCart
 }
 
 .td-back-btn {
@@ -100,84 +95,6 @@
   border-radius: 20px;
 }
 
-<<<<<<< HEAD
-=======
-// Purchase row
-.td-purchase-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 14px;
-  flex-wrap: wrap;
-}
-
-.td-purchase-owned {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: #d1fae5;
-  color: #16a34a;
-  font-size: 13.5px;
-  font-weight: 700;
-  padding: 8px 16px;
-  border-radius: 22px;
-  .material-icons { font-size: 18px; }
-}
-
-.td-cart-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border-radius: 22px;
-  padding: 9px 20px;
-  font-size: 13.5px;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-  font-family: inherit;
-  transition: opacity 0.2s, background 0.2s;
-  .material-icons { font-size: 17px; }
-
-  &--add {
-    background: linear-gradient(135deg, #c084fc, #7c3aed);
-    color: #fff;
-    &:hover:not(:disabled) { opacity: 0.85; }
-    &:disabled { opacity: 0.55; cursor: not-allowed; }
-  }
-
-  &--in-cart {
-    background: #ede9f8;
-    color: #7c3aed;
-    border: 1.5px solid #c4b5fd;
-    &:hover { background: #e2d0fa; }
-  }
-}
-
-.td-cart-error {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: #e05a5a;
-  font-size: 12.5px;
-  .material-icons { font-size: 15px; }
-}
-
-// Locked key points banner
-.td-kp-locked {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: #fef9e7;
-  border: 1px solid #fde68a;
-  border-radius: 10px;
-  padding: 10px 14px;
-  font-size: 13px;
-  color: #92400e;
-  margin-top: 12px;
-  .material-icons { font-size: 17px; color: #f59e0b; flex-shrink: 0; }
-}
-
->>>>>>> feat/shoppingCart
 // Sections
 .td-section {
   background: #fff;

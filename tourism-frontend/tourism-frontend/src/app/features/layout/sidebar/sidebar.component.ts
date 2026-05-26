@@ -1,13 +1,6 @@
-<<<<<<< HEAD
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
-=======
-import { Component, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
-import { AuthService } from '../../../core/services/auth.service';
-import { PurchaseService } from '../../../core/services/purchase.service';
->>>>>>> feat/shoppingCart
 
 @Component({
   selector: 'app-sidebar',
@@ -15,30 +8,9 @@ import { PurchaseService } from '../../../core/services/purchase.service';
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.scss'
 })
-<<<<<<< HEAD
 export class SidebarComponent {
 
   constructor(private authService: AuthService, private router: Router) {}
-=======
-export class SidebarComponent implements OnInit {
-
-  cartCount = 0;
-
-  constructor(
-    private authService: AuthService,
-    private router: Router,
-    private purchaseService: PurchaseService
-  ) {}
-
-  ngOnInit(): void {
-    this.purchaseService.cartCount$.subscribe(count => {
-      this.cartCount = count;
-    });
-    if (this.isTourist) {
-      this.purchaseService.refreshCartCount();
-    }
-  }
->>>>>>> feat/shoppingCart
 
   get isAdmin(): boolean {
     return this.authService.getUser()?.role === 'Admin';

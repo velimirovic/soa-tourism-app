@@ -5,10 +5,6 @@ import {
   TourService, TourDto, KeyPointDto,
   ReviewDto, CreateReviewRequest
 } from '../../../core/services/tour.service';
-<<<<<<< HEAD
-=======
-import { PurchaseService } from '../../../core/services/purchase.service';
->>>>>>> feat/shoppingCart
 import { AuthService } from '../../../core/services/auth.service';
 
 const iconDefault = L.icon({
@@ -36,15 +32,6 @@ export class TourDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   loading = true;
   error = '';
 
-<<<<<<< HEAD
-=======
-  // Purchase state
-  purchased = false;
-  inCart = false;
-  addingToCart = false;
-  cartError = '';
-
->>>>>>> feat/shoppingCart
   // Review form
   reviewRating = 5;
   reviewComment = '';
@@ -61,20 +48,12 @@ export class TourDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private tourService: TourService,
-<<<<<<< HEAD
-=======
-    private purchaseService: PurchaseService,
->>>>>>> feat/shoppingCart
     private authService: AuthService,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
-<<<<<<< HEAD
-=======
-
->>>>>>> feat/shoppingCart
     this.tourService.getTour(id).subscribe({
       next: (tour) => {
         this.tour = tour;
@@ -86,24 +65,6 @@ export class TourDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         this.cdr.detectChanges();
       }
     });
-<<<<<<< HEAD
-=======
-
-    if (this.isTourist) {
-      this.purchaseService.checkPurchased(id).subscribe({
-        next: (res) => {
-          this.purchased = res.purchased;
-          this.cdr.detectChanges();
-        }
-      });
-      this.purchaseService.getCart().subscribe({
-        next: (cart) => {
-          this.inCart = cart.items.some(i => i.tourId === id);
-          this.cdr.detectChanges();
-        }
-      });
-    }
->>>>>>> feat/shoppingCart
   }
 
   ngAfterViewInit(): void {
@@ -114,33 +75,6 @@ export class TourDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.map) this.map.remove();
   }
 
-<<<<<<< HEAD
-=======
-  get isTourist(): boolean { return this.authService.getUser()?.role === 'Tourist'; }
-
-  addToCart(): void {
-    if (!this.tour) return;
-    this.addingToCart = true;
-    this.cartError = '';
-    this.purchaseService.addToCart(this.tour.id, this.tour.name, this.tour.price).subscribe({
-      next: (cart) => {
-        this.inCart = true;
-        this.addingToCart = false;
-        this.cdr.detectChanges();
-      },
-      error: (err) => {
-        this.cartError = err?.error?.error ?? 'Failed to add to cart.';
-        this.addingToCart = false;
-        this.cdr.detectChanges();
-      }
-    });
-  }
-
-  goToCart(): void {
-    this.router.navigate(['/cart']);
-  }
-
->>>>>>> feat/shoppingCart
   private loadKeyPointsAndReviews(tourId: number): void {
     this.tourService.getKeyPoints(tourId).subscribe({
       next: (kps) => {
@@ -150,11 +84,7 @@ export class TourDetailComponent implements OnInit, AfterViewInit, OnDestroy {
           next: (reviews) => {
             this.reviews = reviews;
             this.loading = false;
-<<<<<<< HEAD
             this.cdr.detectChanges(); // section becomes display:block
-=======
-            this.cdr.detectChanges();
->>>>>>> feat/shoppingCart
             setTimeout(() => this.map?.invalidateSize(), 50);
           },
           error: () => {
@@ -218,11 +148,8 @@ export class TourDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
   difficultyClass(d: string): string { return d?.toLowerCase() ?? 'easy'; }
 
-<<<<<<< HEAD
   get isTourist(): boolean { return this.authService.getUser()?.role === 'Tourist'; }
 
-=======
->>>>>>> feat/shoppingCart
   onReviewImageSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const files = Array.from(input.files ?? []);
