@@ -17,7 +17,7 @@
       <button class="td-back-btn" (click)="goBack()">
         <span class="material-icons">arrow_back</span>
       </button>
-      <div>
+      <div class="td-header__body">
         <h2 class="td-title">{{ tour.name }}</h2>
         <div class="td-meta">
           <span class="td-badge td-badge--{{ difficultyClass(tour.difficulty) }}">
@@ -35,6 +35,36 @@
         <div class="td-tags" *ngIf="tour.tags?.length">
           <span class="td-tag" *ngFor="let t of tour.tags">{{ t }}</span>
         </div>
+
+        <!-- Purchase actions (Tourist only) -->
+        <div *ngIf="isTourist" class="td-purchase-row">
+
+          <!-- Already purchased -->
+          <div *ngIf="purchased" class="td-purchase-owned">
+            <span class="material-icons">verified</span>
+            You own this tour — all key points are unlocked!
+          </div>
+
+          <!-- In cart -->
+          <button *ngIf="!purchased && inCart" class="td-cart-btn td-cart-btn--in-cart" (click)="goToCart()">
+            <span class="material-icons">shopping_cart</span>
+            In Cart — Go to Checkout
+          </button>
+
+          <!-- Add to cart -->
+          <ng-container *ngIf="!purchased && !inCart">
+            <button class="td-cart-btn td-cart-btn--add"
+              [disabled]="addingToCart"
+              (click)="addToCart()">
+              <span class="material-icons">{{ addingToCart ? 'hourglass_top' : 'add_shopping_cart' }}</span>
+              {{ addingToCart ? 'Adding…' : 'Add to Cart' }}
+            </button>
+            <span *ngIf="cartError" class="td-cart-error">
+              <span class="material-icons">error_outline</span> {{ cartError }}
+            </span>
+          </ng-container>
+
+        </div>
       </div>
     </div>
 
@@ -49,6 +79,8 @@
     <div class="td-map-wrap">
       <div id="td-map"></div>
     </div>
+
+    <!-- Key points list -->
     <div class="td-kp-list" *ngIf="keyPoints.length > 0">
       <div class="td-kp-item" *ngFor="let kp of keyPoints; let i = index">
         <div class="td-kp-num">{{ i + 1 }}</div>
@@ -58,6 +90,13 @@
         </div>
       </div>
     </div>
+
+    <!-- Locked hint: tourist sees only starting point -->
+    <div *ngIf="isTourist && !purchased" class="td-kp-locked">
+      <span class="material-icons">lock</span>
+      <span>Purchase this tour to unlock all key points along the route.</span>
+    </div>
+
     <div class="td-empty" *ngIf="keyPoints.length === 0">No key points defined for this tour.</div>
   </div>
 

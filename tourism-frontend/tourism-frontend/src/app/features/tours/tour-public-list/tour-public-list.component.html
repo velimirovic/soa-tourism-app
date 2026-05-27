@@ -74,6 +74,34 @@
         </span>
       </div>
 
+      <!-- Cart action row (Tourist only) -->
+      <div *ngIf="isTourist" class="tc__cart-row" (click)="$event.stopPropagation()">
+
+        <!-- Already purchased -->
+        <span *ngIf="purchasedTourIds.has(tour.id)" class="tc__cart-status tc__cart-status--purchased">
+          <span class="material-icons">check_circle</span>
+          Purchased
+        </span>
+
+        <!-- In cart -->
+        <button *ngIf="!purchasedTourIds.has(tour.id) && cartTourIds.has(tour.id)"
+          class="tc__cart-btn tc__cart-btn--in-cart"
+          (click)="goToCart($event)">
+          <span class="material-icons">shopping_cart</span>
+          In Cart
+        </button>
+
+        <!-- Add to cart -->
+        <button *ngIf="!purchasedTourIds.has(tour.id) && !cartTourIds.has(tour.id)"
+          class="tc__cart-btn tc__cart-btn--add"
+          [disabled]="addingToCart.has(tour.id)"
+          (click)="addToCart($event, tour)">
+          <span class="material-icons">{{ addingToCart.has(tour.id) ? 'hourglass_top' : 'add_shopping_cart' }}</span>
+          {{ addingToCart.has(tour.id) ? 'Adding…' : 'Add to Cart' }}
+        </button>
+
+      </div>
+
     </div>
 
   </div>
