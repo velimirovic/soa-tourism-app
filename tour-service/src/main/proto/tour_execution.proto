@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+option java_package = "com.tourservice.grpc";
+option java_outer_classname = "TourExec";
+option java_multiple_files = false;
+option go_package = "api-gateway/proto";
+
+package tourexecution;
+
+service TourExecutionService {
+  rpc StartTour     (StartTourRequest)     returns (TourExecutionResponse) {}
+  rpc CheckPosition (CheckPositionRequest) returns (CheckPositionResponse) {}
+}
+
+message StartTourRequest {
+  int64  tour_id     = 1;
+  int64  tourist_id  = 2;
+  double latitude    = 3;
+  double longitude   = 4;
+  string auth_token  = 5;
+}
+
+message TourExecutionResponse {
+  int64  id               = 1;
+  int64  tour_id          = 2;
+  int64  tourist_id       = 3;
+  string status           = 4;
+  string started_at       = 5;
+  string ended_at         = 6;
+  string last_activity    = 7;
+  double start_latitude   = 8;
+  double start_longitude  = 9;
+  repeated CompletedKeyPointMsg completed_key_points = 10;
+}
+
+message CheckPositionRequest {
+  int64  execution_id = 1;
+  double latitude     = 2;
+  double longitude    = 3;
+}
+
+message CompletedKeyPointMsg {
+  int64  id            = 1;
+  int64  key_point_id  = 2;
+  string completed_at  = 3;
+}
+
+message CheckPositionResponse {
+  int64  execution_id = 1;
+  repeated CompletedKeyPointMsg newly_completed_key_points = 2;
+  repeated CompletedKeyPointMsg all_completed_key_points   = 3;
+  bool   tour_completed = 4;
+}

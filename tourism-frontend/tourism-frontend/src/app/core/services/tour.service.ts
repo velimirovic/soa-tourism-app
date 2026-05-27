@@ -87,6 +87,32 @@ export interface TourDto {
   durations?: TourDurationDto[];
 }
 
+export interface CompletedKeyPointDto {
+  id: number;
+  keyPointId: number;
+  completedAt: string;
+}
+
+export interface TourExecutionDto {
+  id: number;
+  tourId: number;
+  touristId: number;
+  status: string; // ACTIVE | COMPLETED | ABANDONED
+  startedAt: string;
+  endedAt?: string;
+  lastActivity: string;
+  startLatitude?: number;
+  startLongitude?: number;
+  completedKeyPoints: CompletedKeyPointDto[];
+}
+
+export interface CheckPositionResponseDto {
+  executionId: number;
+  newlyCompletedKeyPoints: CompletedKeyPointDto[];
+  allCompletedKeyPoints: CompletedKeyPointDto[];
+  tourCompleted: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class TourService {
 
@@ -156,5 +182,38 @@ export class TourService {
 
   addReview(tourId: number, req: CreateReviewRequest): Observable<ReviewDto> {
     return this.http.post<ReviewDto>(`${this.base}/${tourId}/reviews`, req);
+  }
+
+  // ── Tour Execution (F17) ─────────────────────────────────────────────────────
+
+  startTour(tourId: number, latitude: number, longitude: number): Observable<TourExecutionDto> {
+    return this.http.post<TourExecutionDto>(`${this.base}/executions`, { tourId, latitude, longitude });
+  }
+
+  checkPosition(executionId: number, latitude: number, longitude: number): Observable<CheckPositionResponseDto> {
+    return this.http.post<CheckPositionResponseDto>(
+      `${this.base}/executions/${executionId}/check-position`,
+      { latitude, longitude }
+    );
+  }
+
+  completeTour(executionId: number): Observable<TourExecutionDto> {
+    return this.http.put<TourExecutionDto>(`${this.base}/executions/${executionId}/complete`, {});
+  }
+
+  abandonTour(executionId: number): Observable<TourExecutionDto> {
+    return this.http.put<TourExecutionDto>(`${this.base}/executions/${executionId}/abandon`, {});
+  }
+
+  getActiveExecution(): Observable<TourExecutionDto | null> {
+    return this.http.get<TourExecutionDto | null>(`${this.base}/executions/active`);
+  }
+
+  hasCompletedExecution(tourId: number): Observable<{ hasCompleted: boolean }> {
+    return this.http.get<{ hasCompleted: boolean }>(`${this.base}/executions/has-completed?tourId=${tourId}`);
+  }
+
+  getCompletedTourIds(): Observable<number[]> {
+    return this.http.get<number[]>(`${this.base}/executions/completed-tour-ids`);
   }
 }

@@ -43,6 +43,10 @@
           <div *ngIf="purchased" class="td-purchase-owned">
             <span class="material-icons">verified</span>
             You own this tour — all key points are unlocked!
+            <button class="td-start-btn" (click)="startTour()">
+              <span class="material-icons">play_arrow</span>
+              Start Tour
+            </button>
           </div>
 
           <!-- In cart -->
@@ -109,8 +113,18 @@
         Reviews <span class="td-count">({{ reviews.length }})</span>
       </h3>
 
-      <!-- Add review form (Tourist only) -->
-      <div class="td-review-form" *ngIf="isTourist">
+      <!-- Review gate notices (Tourist only) — hasAlreadyReviewed has highest priority -->
+      <div *ngIf="isTourist && hasAlreadyReviewed" class="td-review-gate td-review-gate--done">
+        <span class="material-icons">check_circle</span>
+        You have already reviewed this tour. Thank you!
+      </div>
+      <div *ngIf="isTourist && !hasAlreadyReviewed && !hasCompletedTour" class="td-review-gate">
+        <span class="material-icons">lock</span>
+        Complete this tour to leave a review.
+      </div>
+
+      <!-- Add review form (Tourist who completed + not yet reviewed) -->
+      <div class="td-review-form" *ngIf="isTourist && hasCompletedTour && !hasAlreadyReviewed">
         <h4 class="td-form-title">Leave a Review</h4>
 
         <div class="td-field">
