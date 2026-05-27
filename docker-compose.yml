@@ -19,6 +19,7 @@ services:
       STAKEHOLDERS_SERVICE_URL: http://stakeholders-service:80
       FOLLOWERS_SERVICE_URL: http://followers-service:8084
       PURCHASE_SERVICE_URL: http://purchase-service:8080
+      TOUR_SERVICE_GRPC_URL: tour-service:9090
     depends_on:
       - auth-service
       - blog-service
@@ -105,6 +106,7 @@ services:
       - application
     ports:
       - "8083:8080"
+      - "9090:9090"
     environment:
       DATABASE_HOST: tour-db
       DATABASE_PORT: 5432
@@ -112,6 +114,7 @@ services:
       DATABASE_PASSWORD: super
       DATABASE_NAME: tours
       JWT_KEY: change-me-in-production-min32chars!!
+      PURCHASE_SERVICE_URL: http://purchase-service:8080
     depends_on:
       - tour-db
 

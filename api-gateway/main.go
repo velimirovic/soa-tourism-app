@@ -21,7 +21,6 @@ var publicPaths = []string{
 }
 
 func isPublicPath(path string) bool {
-	// Skidamo /api prefiks radi poređenja
 	stripped := strings.TrimPrefix(path, "/api")
 	for _, p := range publicPaths {
 		if stripped == p || strings.HasPrefix(stripped, p+"/") {
@@ -31,14 +30,12 @@ func isPublicPath(path string) bool {
 	return false
 }
 
-// corsMiddleware dodaje CORS zaglavlja na svaki odgovor
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
-		// Preflight zahtev — vracamo 204 odmah
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
 			return
@@ -47,10 +44,8 @@ func corsMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// jwtMiddleware proverava JWT token za zaštićene rute
 func jwtMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Javne rute propuštamo bez provere tokena
 		if isPublicPath(r.URL.Path) {
 			next.ServeHTTP(w, r)
 			return
@@ -64,7 +59,6 @@ func jwtMiddleware(next http.Handler) http.Handler {
 
 		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
 		token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
-			// Proveravamo da li je algoritam potpisivanja HMAC
 			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, jwt.ErrSignatureInvalid
 			}
@@ -80,8 +74,6 @@ func jwtMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// newReverseProxy kreira reverse proxy koji uklanja /api prefiks pre prosleđivanja
-// npr. /api/auth/register -> /auth/register na ciljnom servisu
 func newReverseProxy(target string) http.Handler {
 	targetURL, err := url.Parse(target)
 	if err != nil {
@@ -93,18 +85,13 @@ func newReverseProxy(target string) http.Handler {
 	originalDirector := proxy.Director
 	proxy.Director = func(req *http.Request) {
 		originalDirector(req)
-
-		// Uklanjamo /api prefiks kako bi servis dobio svoju nativnu putanju
-		// /api/auth/register -> /auth/register
 		req.URL.Path = strings.TrimPrefix(req.URL.Path, "/api")
 		if req.URL.RawPath != "" {
 			req.URL.RawPath = strings.TrimPrefix(req.URL.RawPath, "/api")
 		}
-
 		req.Host = targetURL.Host
 	}
 
-	// Greška pri prosleđivanju zahteva — servis nije dostupan
 	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
 		log.Printf("Greška proxy-ja za %s: %v", r.URL.Path, err)
 		http.Error(w, `{"error":"Servis nije dostupan"}`, http.StatusBadGateway)
@@ -114,53 +101,78 @@ func newReverseProxy(target string) http.Handler {
 }
 
 func main() {
-	// JWT tajni ključ mora biti isti kao u auth-servisu
 	jwtKeyStr := os.Getenv("JWT_KEY")
 	if jwtKeyStr == "" {
 		jwtKeyStr = "change-me-in-production-min32chars!!"
 	}
 	jwtKey = []byte(jwtKeyStr)
 
-	// URL-ovi servisa unutar Docker mreže
 	authServiceURL := os.Getenv("AUTH_SERVICE_URL")
 	if authServiceURL == "" {
 		authServiceURL = "http://auth-service:80"
 	}
-
 	blogServiceURL := os.Getenv("BLOG_SERVICE_URL")
 	if blogServiceURL == "" {
 		blogServiceURL = "http://blog-service:3001"
 	}
-
 	tourServiceURL := os.Getenv("TOUR_SERVICE_URL")
 	if tourServiceURL == "" {
 		tourServiceURL = "http://tour-service:8080"
 	}
-
 	stakeholdersServiceURL := os.Getenv("STAKEHOLDERS_SERVICE_URL")
 	if stakeholdersServiceURL == "" {
 		stakeholdersServiceURL = "http://stakeholders-service:80"
 	}
-
 	followersServiceURL := os.Getenv("FOLLOWERS_SERVICE_URL")
 	if followersServiceURL == "" {
 		followersServiceURL = "http://followers-service:8084"
 	}
-
 	purchaseServiceURL := os.Getenv("PURCHASE_SERVICE_URL")
 	if purchaseServiceURL == "" {
 		purchaseServiceURL = "http://purchase-service:8080"
 	}
+	tourServiceGrpcURL := os.Getenv("TOUR_SERVICE_GRPC_URL")
+	if tourServiceGrpcURL == "" {
+		tourServiceGrpcURL = "tour-service:9090"
+	}
+
+	grpcH, err := newGrpcHandlers(tourServiceGrpcURL)
+	if err != nil {
+		log.Fatalf("Failed to connect to tour-service gRPC: %v", err)
+	}
 
 	mux := http.NewServeMux()
 
-	// Rutiranje zahteva ka odgovarajucim servisima
+	// ── gRPC-backed routes (intercept before the /api/tours/ catch-all) ──────────
+	tourProxy := newReverseProxy(tourServiceURL)
+
+	// POST /api/tours/executions → gRPC StartTour; others → REST proxy
+	mux.HandleFunc("/api/tours/executions", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			grpcH.handleStartTour(w, r)
+		} else {
+			tourProxy.ServeHTTP(w, r)
+		}
+	})
+
+	// /api/tours/executions/* → check-position via gRPC; others → REST proxy
+	mux.HandleFunc("/api/tours/executions/", func(w http.ResponseWriter, r *http.Request) {
+		path := strings.TrimPrefix(r.URL.Path, "/api/tours/executions/")
+		parts := strings.Split(strings.Trim(path, "/"), "/")
+		if len(parts) == 2 && parts[1] == "check-position" && r.Method == http.MethodPost {
+			grpcH.handleCheckPosition(w, r, parts[0])
+		} else {
+			tourProxy.ServeHTTP(w, r)
+		}
+	})
+
+	// ── REST proxy routes ────────────────────────────────────────────────────────
 	mux.Handle("/api/auth", newReverseProxy(authServiceURL))
 	mux.Handle("/api/auth/", newReverseProxy(authServiceURL))
 	mux.Handle("/api/blogs", newReverseProxy(blogServiceURL))
 	mux.Handle("/api/blogs/", newReverseProxy(blogServiceURL))
-	mux.Handle("/api/tours", newReverseProxy(tourServiceURL))
-	mux.Handle("/api/tours/", newReverseProxy(tourServiceURL))
+	mux.Handle("/api/tours", tourProxy)
+	mux.Handle("/api/tours/", tourProxy)
 	mux.Handle("/api/stakeholders", newReverseProxy(stakeholdersServiceURL))
 	mux.Handle("/api/stakeholders/", newReverseProxy(stakeholdersServiceURL))
 	mux.Handle("/api/followers", newReverseProxy(followersServiceURL))
@@ -168,14 +180,12 @@ func main() {
 	mux.Handle("/api/purchases", newReverseProxy(purchaseServiceURL))
 	mux.Handle("/api/purchases/", newReverseProxy(purchaseServiceURL))
 
-	// Health check endpoint za proveru stanja gateway-a
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"status":"ok","service":"api-gateway"}`))
 	})
 
-	// Primenjujemo middleware: prvo CORS, pa JWT provera
 	handler := corsMiddleware(jwtMiddleware(mux))
 
 	port := os.Getenv("PORT")
@@ -184,12 +194,7 @@ func main() {
 	}
 
 	log.Printf("API Gateway pokrenut na portu :%s", port)
-	log.Printf("  /api/auth/*          -> %s", authServiceURL)
-	log.Printf("  /api/blogs/*         -> %s", blogServiceURL)
-	log.Printf("  /api/tours/*         -> %s", tourServiceURL)
-	log.Printf("  /api/stakeholders/*  -> %s", stakeholdersServiceURL)
-	log.Printf("  /api/followers/*     -> %s", followersServiceURL)
-	log.Printf("  /api/purchases/*     -> %s", purchaseServiceURL)
+	log.Printf("  gRPC → tour-service: %s", tourServiceGrpcURL)
 
 	if err := http.ListenAndServe(":"+port, handler); err != nil {
 		log.Fatalf("Gateway se ugasio sa greškom: %v", err)

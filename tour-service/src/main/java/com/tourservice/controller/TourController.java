@@ -33,6 +33,7 @@ import com.tourservice.model.TourDuration;
 import com.tourservice.repository.KeyPointRepository;
 import com.tourservice.repository.ReviewRepository;
 import com.tourservice.repository.TourDurationRepository;
+import com.tourservice.repository.TourExecutionRepository;
 import com.tourservice.repository.TourRepository;
 import com.tourservice.util.JwtUtil;
 
@@ -49,18 +50,21 @@ public class TourController {
     private final KeyPointRepository keyPointRepository;
     private final ReviewRepository reviewRepository;
     private final TourDurationRepository tourDurationRepository;
+    private final TourExecutionRepository tourExecutionRepository;
     private final JwtUtil jwtUtil;
 
     public TourController(TourRepository tourRepository,
                           KeyPointRepository keyPointRepository,
                           ReviewRepository reviewRepository,
                           TourDurationRepository tourDurationRepository,
+                          TourExecutionRepository tourExecutionRepository,
                           JwtUtil jwtUtil) {
-        this.tourRepository         = tourRepository;
-        this.keyPointRepository     = keyPointRepository;
-        this.reviewRepository       = reviewRepository;
-        this.tourDurationRepository = tourDurationRepository;
-        this.jwtUtil                = jwtUtil;
+        this.tourRepository          = tourRepository;
+        this.keyPointRepository      = keyPointRepository;
+        this.reviewRepository        = reviewRepository;
+        this.tourDurationRepository  = tourDurationRepository;
+        this.tourExecutionRepository = tourExecutionRepository;
+        this.jwtUtil                 = jwtUtil;
     }
 
     // ─── Kreiranje ture ────────────────────────────────────────────────────────
@@ -494,6 +498,18 @@ public class TourController {
 
         if (!tourRepository.existsById(tourId)) {
             return ResponseEntity.status(404).body(Map.of("error", "Tour not found"));
+        }
+
+        boolean hasCompleted = tourExecutionRepository
+                .findByTouristIdAndTourIdAndStatus(touristId, tourId, "COMPLETED").isPresent();
+        if (!hasCompleted) {
+            return ResponseEntity.status(403).body(Map.of("error",
+                    "You can only review tours you have completed"));
+        }
+
+        if (reviewRepository.existsByTouristIdAndTourId(touristId, tourId)) {
+            return ResponseEntity.status(409).body(Map.of("error",
+                    "You have already reviewed this tour"));
         }
 
         Review review = new Review();

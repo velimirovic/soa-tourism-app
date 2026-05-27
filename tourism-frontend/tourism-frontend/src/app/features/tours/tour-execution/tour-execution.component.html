@@ -1,0 +1,127 @@
+<div class="exec-page">
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="exec-state">
+    <span class="material-icons spinning">sync</span>
+    Starting tour…
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="!loading && error" class="exec-state exec-state--error">
+    <span class="material-icons">error_outline</span>
+    {{ error }}
+    <button class="exec-btn exec-btn--secondary" (click)="goBack()">
+      <span class="material-icons">arrow_back</span> Go Back
+    </button>
+  </div>
+
+  <!-- Active execution -->
+  <ng-container *ngIf="!loading && !error && execution">
+
+    <!-- Header -->
+    <div class="exec-header">
+      <div class="exec-header__left">
+        <span class="material-icons exec-header__icon">directions_run</span>
+        <div>
+          <h2 class="exec-header__title">{{ tour?.name ?? 'Active Tour' }}</h2>
+          <p class="exec-header__sub">
+            {{ completedCount }} / {{ totalKeyPoints }} key points reached
+          </p>
+        </div>
+      </div>
+      <div class="exec-header__actions">
+        <ng-container *ngIf="execution.status === 'ACTIVE'">
+          <button class="exec-btn exec-btn--danger" (click)="abandon()" [disabled]="ending">
+            <span class="material-icons">cancel</span>
+            Abandon
+          </button>
+        </ng-container>
+        <ng-container *ngIf="execution.status === 'COMPLETED'">
+          <button class="exec-btn exec-btn--secondary" (click)="goToDetails()">
+            <span class="material-icons">info</span>
+            Tour Details
+          </button>
+        </ng-container>
+      </div>
+    </div>
+
+    <!-- Tour completed banner -->
+    <div *ngIf="execution.status === 'COMPLETED'" class="exec-completed-banner">
+      <span class="material-icons">celebration</span>
+      All key points reached! Tour completed.
+    </div>
+
+    <!-- Progress bar -->
+    <div class="exec-progress">
+      <div class="exec-progress__bar"
+           [style.width.%]="totalKeyPoints > 0 ? (completedCount / totalKeyPoints) * 100 : 0">
+      </div>
+    </div>
+
+  </ng-container>
+
+  <!-- Map — always in DOM so Leaflet can attach -->
+  <div id="exec-map" class="exec-map"
+       [style.display]="(!loading && !error && execution) ? 'block' : 'none'">
+  </div>
+
+  <ng-container *ngIf="!loading && !error && execution">
+
+    <!-- Position update panel -->
+    <div class="exec-pos-section">
+      <button class="exec-pos-toggle" (click)="togglePosPanel()" type="button">
+        <span class="material-icons">{{ showPosPanel ? 'expand_less' : 'my_location' }}</span>
+        {{ showPosPanel ? 'Hide Position Panel' : 'Update My Position' }}
+      </button>
+
+      <div class="exec-pos-panel" *ngIf="showPosPanel">
+        <p class="exec-pos-hint">
+          <span class="material-icons">touch_app</span>
+          Click on the map above to set your position, or enter coordinates manually.
+        </p>
+        <div class="exec-pos-inputs">
+          <div class="exec-pos-field">
+            <label>Latitude</label>
+            <input type="number" step="0.000001" [(ngModel)]="posLat" placeholder="e.g. 45.2671" />
+          </div>
+          <div class="exec-pos-field">
+            <label>Longitude</label>
+            <input type="number" step="0.000001" [(ngModel)]="posLng" placeholder="e.g. 19.8335" />
+          </div>
+          <button class="exec-btn exec-btn--pos" (click)="savePosition()" [disabled]="savingPos || posLat === null || posLng === null">
+            <span class="material-icons">{{ savingPos ? 'hourglass_top' : 'save' }}</span>
+            {{ savingPos ? 'Saving…' : 'Save & Check' }}
+          </button>
+        </div>
+        <div *ngIf="posSaved" class="exec-pos-ok">
+          <span class="material-icons">check_circle</span> Position saved — checking proximity…
+        </div>
+        <div *ngIf="posError" class="exec-pos-err">
+          <span class="material-icons">error_outline</span> {{ posError }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Key points list -->
+    <div class="exec-kp-list">
+      <div class="exec-kp-item" *ngFor="let kp of keyPoints; let i = index"
+           [class.exec-kp-item--done]="isKeyPointCompleted(kp)">
+        <div class="exec-kp-item__num">{{ i + 1 }}</div>
+        <div class="exec-kp-item__info">
+          <div class="exec-kp-item__name">{{ kp.name }}</div>
+          <div class="exec-kp-item__desc" *ngIf="kp.description">{{ kp.description }}</div>
+        </div>
+        <span class="material-icons exec-kp-item__status">
+          {{ isKeyPointCompleted(kp) ? 'check_circle' : 'radio_button_unchecked' }}
+        </span>
+      </div>
+    </div>
+
+    <p class="exec-note">
+      <span class="material-icons">info</span>
+      Position is checked automatically every 10 seconds, or instantly when you save your position above.
+    </p>
+
+  </ng-container>
+
+</div>

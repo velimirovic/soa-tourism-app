@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface ReviewRepository extends JpaRepository<Review, Long> {
     List<Review> findByTourIdOrderByCommentDateDesc(Long tourId);
+    boolean existsByTouristIdAndTourId(Long touristId, Long tourId);
 }

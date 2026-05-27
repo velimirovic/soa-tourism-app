@@ -100,9 +100,9 @@ export class TourListComponent implements OnInit {
 
   transportLabel(type: string): string {
     switch (type) {
-      case 'BICYCLE': return 'Bicikl';
-      case 'CAR':     return 'Auto';
-      default:        return 'Peške';
+      case 'BICYCLE': return 'Bicycle';
+      case 'CAR':     return 'Car';
+      default:        return 'On foot';
     }
   }
 

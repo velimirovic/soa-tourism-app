@@ -13,6 +13,7 @@ import { AuthService } from '../../../core/services/auth.service';
 export class TourPublicListComponent implements OnInit {
 
   tours: TourDto[] = [];
+  private allTours: TourDto[] = [];
   loading = true;
   error = '';
 
@@ -35,7 +36,8 @@ export class TourPublicListComponent implements OnInit {
   ngOnInit(): void {
     this.tourService.getAllTours().subscribe({
       next: (tours) => {
-        this.tours = tours;
+        this.allTours = tours;
+        this.applyFilter();
         this.loading = false;
         this.cdr.detectChanges();
       },
@@ -56,6 +58,7 @@ export class TourPublicListComponent implements OnInit {
       this.purchaseService.getTokens().subscribe({
         next: (tokens) => {
           this.purchasedTourIds = new Set(tokens.map(t => t.tourId));
+          this.applyFilter();
           this.cdr.detectChanges();
         }
       });
@@ -94,6 +97,10 @@ export class TourPublicListComponent implements OnInit {
       case 'CAR':     return 'directions_car';
       default:        return 'directions_walk';
     }
+  }
+
+  private applyFilter(): void {
+    this.tours = this.allTours.filter(t => !this.purchasedTourIds.has(t.id));
   }
 
   goToDetail(tourId: number): void {

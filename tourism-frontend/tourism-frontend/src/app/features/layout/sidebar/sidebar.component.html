@@ -18,35 +18,29 @@
       <span class="sidebar__nav-label">Home</span>
     </a>
 
-    <!-- Auth-required items -->
     <ng-container *ngIf="isLoggedIn">
-      <a routerLink="/blogs" routerLinkActive="sidebar__nav-item--active" class="sidebar__nav-item">
-        <span class="material-icons sidebar__nav-icon">article</span>
-        <span class="sidebar__nav-label">Blogs</span>
-      </a>
 
-      <a routerLink="/people" routerLinkActive="sidebar__nav-item--active" class="sidebar__nav-item">
-        <span class="material-icons sidebar__nav-icon">group</span>
-        <span class="sidebar__nav-label">People</span>
-      </a>
-
-      <!-- Tours — Guide sees "My Tours" pointing to /tours/my; Tourist sees "Tours" pointing to /tours -->
-      <a
-        [routerLink]="toursRoute"
-        routerLinkActive="sidebar__nav-item--active"
-        class="sidebar__nav-item"
-      >
+      <!-- Tours (Guide sees My Tours) -->
+      <a [routerLink]="toursRoute" routerLinkActive="sidebar__nav-item--active" class="sidebar__nav-item">
         <span class="material-icons sidebar__nav-icon">map</span>
         <span class="sidebar__nav-label">{{ isGuide ? 'My Tours' : 'Tours' }}</span>
       </a>
 
-      <!-- Position simulator — Tourist only -->
-      <a *ngIf="isTourist" routerLink="/simulator" routerLinkActive="sidebar__nav-item--active" class="sidebar__nav-item">
-        <span class="material-icons sidebar__nav-icon">location_searching</span>
-        <span class="sidebar__nav-label">Simulator</span>
+      <!-- Active Tour — Tourist only, only when one is in progress -->
+      <a *ngIf="isTourist && activeTourId"
+         [routerLink]="['/tours', activeTourId, 'execute']"
+         routerLinkActive="sidebar__nav-item--active"
+         class="sidebar__nav-item sidebar__nav-item--active-tour">
+        <div class="sidebar__nav-icon-wrap">
+          <span class="material-icons sidebar__nav-icon">directions_run</span>
+          <span class="sidebar__pulse"></span>
+        </div>
+        <span class="sidebar__nav-label">Active Tour</span>
       </a>
 
-      <!-- Cart & Purchases — Tourist only -->
+      <div class="sidebar__divider"></div>
+
+      <!-- Shopping — Tourist only -->
       <a *ngIf="isTourist" routerLink="/cart" routerLinkActive="sidebar__nav-item--active" class="sidebar__nav-item">
         <div class="sidebar__nav-icon-wrap">
           <span class="material-icons sidebar__nav-icon">shopping_cart</span>
@@ -60,10 +54,33 @@
         <span class="sidebar__nav-label">Purchases</span>
       </a>
 
+      <div class="sidebar__divider" *ngIf="isTourist"></div>
+
+      <!-- Community -->
+      <a routerLink="/blogs" routerLinkActive="sidebar__nav-item--active" class="sidebar__nav-item">
+        <span class="material-icons sidebar__nav-icon">article</span>
+        <span class="sidebar__nav-label">Blogs</span>
+      </a>
+
+      <a routerLink="/people" routerLinkActive="sidebar__nav-item--active" class="sidebar__nav-item">
+        <span class="material-icons sidebar__nav-icon">group</span>
+        <span class="sidebar__nav-label">People</span>
+      </a>
+
+      <!-- Position Simulator — Tourist only -->
+      <a *ngIf="isTourist" routerLink="/simulator" routerLinkActive="sidebar__nav-item--active" class="sidebar__nav-item">
+        <span class="material-icons sidebar__nav-icon">location_searching</span>
+        <span class="sidebar__nav-label">Simulator</span>
+      </a>
+
+      <div class="sidebar__divider"></div>
+
+      <!-- Profile -->
       <a routerLink="/profile" routerLinkActive="sidebar__nav-item--active" class="sidebar__nav-item">
         <span class="material-icons sidebar__nav-icon">account_circle</span>
-        <span class="sidebar__nav-label">Me</span>
+        <span class="sidebar__nav-label">Profile</span>
       </a>
+
     </ng-container>
 
     <!-- Admin section -->

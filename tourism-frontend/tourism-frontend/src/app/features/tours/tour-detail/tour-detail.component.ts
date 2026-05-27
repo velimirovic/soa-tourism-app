@@ -39,6 +39,10 @@ export class TourDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   addingToCart = false;
   cartError = '';
 
+  // Review state
+  hasCompletedTour = false;
+  hasAlreadyReviewed = false;
+
   // Review form
   reviewRating = 5;
   reviewComment = '';
@@ -77,16 +81,14 @@ export class TourDetailComponent implements OnInit, AfterViewInit, OnDestroy {
 
     if (this.isTourist) {
       this.purchaseService.checkPurchased(id).subscribe({
-        next: (res) => {
-          this.purchased = res.purchased;
-          this.cdr.detectChanges();
-        }
+        next: (res) => { this.purchased = res.purchased; this.cdr.detectChanges(); }
       });
       this.purchaseService.getCart().subscribe({
-        next: (cart) => {
-          this.inCart = cart.items.some(i => i.tourId === id);
-          this.cdr.detectChanges();
-        }
+        next: (cart) => { this.inCart = cart.items.some(i => i.tourId === id); this.cdr.detectChanges(); }
+      });
+      this.tourService.hasCompletedExecution(id).subscribe({
+        next: (res) => { this.hasCompletedTour = res.hasCompleted; this.cdr.detectChanges(); },
+        error: () => {}
       });
     }
   }
@@ -131,6 +133,8 @@ export class TourDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         this.tourService.getReviews(tourId).subscribe({
           next: (reviews) => {
             this.reviews = reviews;
+            const myId = this.authService.getUser()?.id;
+            this.hasAlreadyReviewed = reviews.some(r => r.touristId === myId);
             this.loading = false;
             this.cdr.detectChanges();
             setTimeout(() => this.map?.invalidateSize(), 50);
@@ -179,9 +183,23 @@ export class TourDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     });
 
     if (this.keyPoints.length >= 2) {
-      const latlngs = this.keyPoints.map(kp => [kp.latitude, kp.longitude] as L.LatLngTuple);
-      this.polyline = L.polyline(latlngs, { color: '#a855f7', weight: 3, dashArray: '6,6' })
-        .addTo(this.map);
+      const coords = this.keyPoints.map(kp => `${kp.longitude},${kp.latitude}`).join(';');
+      const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
+      fetch(url)
+        .then(r => r.json())
+        .then(data => {
+          if (!this.map) return;
+          const routeCoords: [number, number][] = data?.routes?.[0]?.geometry?.coordinates;
+          if (routeCoords?.length) {
+            const latlngs = routeCoords.map(([lng, lat]) => [lat, lng] as L.LatLngTuple);
+            this.polyline = L.polyline(latlngs, { color: '#a855f7', weight: 4 }).addTo(this.map);
+          }
+        })
+        .catch(() => {
+          if (!this.map) return;
+          const latlngs = this.keyPoints.map(kp => [kp.latitude, kp.longitude] as L.LatLngTuple);
+          this.polyline = L.polyline(latlngs, { color: '#a855f7', weight: 3, dashArray: '6,6' }).addTo(this.map);
+        });
     }
 
     if (this.keyPoints.length > 0) {
@@ -234,6 +252,7 @@ export class TourDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.tourService.addReview(this.tour.id, req).subscribe({
       next: (r) => {
         this.reviews = [r, ...this.reviews];
+        this.hasAlreadyReviewed = true;
         this.reviewRating = 5;
         this.reviewComment = '';
         this.reviewVisitDate = '';
@@ -248,6 +267,10 @@ export class TourDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  startTour(): void {
+    if (this.tour) this.router.navigate(['/tours', this.tour.id, 'execute']);
   }
 
   goBack(): void { this.router.navigate(['/tours']); }
