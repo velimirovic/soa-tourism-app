@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -13,7 +14,6 @@ import (
 
 var jwtKey []byte
 
-// javne rute koje ne zahtevaju JWT token
 var publicPaths = []string{
 	"/auth/register",
 	"/auth/login",
@@ -136,31 +136,38 @@ func main() {
 		tourServiceGrpcURL = "tour-service:9090"
 	}
 
-	grpcH, err := newGrpcHandlers(tourServiceGrpcURL)
+	// ── gRPC-Gateway: HTTP/JSON → gRPC transcoding ──────────────────────────────
+	// Follows the grpc-gateway pattern: gateway translates REST requests to gRPC
+	// calls on the tour-service using the routes defined in tour_execution.proto.
+	ctx := context.Background()
+	gwMux, err := newGatewayMux(ctx, tourServiceGrpcURL)
 	if err != nil {
-		log.Fatalf("Failed to connect to tour-service gRPC: %v", err)
+		log.Fatalf("Failed to create gRPC gateway: %v", err)
 	}
 
 	mux := http.NewServeMux()
-
-	// ── gRPC-backed routes (intercept before the /api/tours/ catch-all) ──────────
 	tourProxy := newReverseProxy(tourServiceURL)
 
-	// POST /api/tours/executions → gRPC StartTour; others → REST proxy
+	// ── gRPC-backed routes ───────────────────────────────────────────────────────
+	// POST /api/tours/executions → gRPC StartTour via gateway
+	// All other methods → REST proxy (e.g. GET to fetch active execution)
 	mux.HandleFunc("/api/tours/executions", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
-			grpcH.handleStartTour(w, r)
+			r.URL.Path = strings.TrimPrefix(r.URL.Path, "/api")
+			gwMux.ServeHTTP(w, r)
 		} else {
 			tourProxy.ServeHTTP(w, r)
 		}
 	})
 
-	// /api/tours/executions/* → check-position via gRPC; others → REST proxy
+	// POST /api/tours/executions/{id}/check-position → gRPC CheckPosition via gateway
+	// All other paths/methods → REST proxy (complete, abandon, get by id, etc.)
 	mux.HandleFunc("/api/tours/executions/", func(w http.ResponseWriter, r *http.Request) {
 		path := strings.TrimPrefix(r.URL.Path, "/api/tours/executions/")
 		parts := strings.Split(strings.Trim(path, "/"), "/")
 		if len(parts) == 2 && parts[1] == "check-position" && r.Method == http.MethodPost {
-			grpcH.handleCheckPosition(w, r, parts[0])
+			r.URL.Path = strings.TrimPrefix(r.URL.Path, "/api")
+			gwMux.ServeHTTP(w, r)
 		} else {
 			tourProxy.ServeHTTP(w, r)
 		}
@@ -194,7 +201,7 @@ func main() {
 	}
 
 	log.Printf("API Gateway pokrenut na portu :%s", port)
-	log.Printf("  gRPC → tour-service: %s", tourServiceGrpcURL)
+	log.Printf("  gRPC Gateway → tour-service: %s", tourServiceGrpcURL)
 
 	if err := http.ListenAndServe(":"+port, handler); err != nil {
 		log.Fatalf("Gateway se ugasio sa greškom: %v", err)
