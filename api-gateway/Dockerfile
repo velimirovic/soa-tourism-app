@@ -3,16 +3,32 @@ FROM golang:1.21-alpine AS builder
 
 WORKDIR /app
 
-# Skip checksum DB so go can fetch and verify dependencies freely
+# Install protoc
+RUN apk add --no-cache protobuf protobuf-dev
+
+# Install protoc-gen-go and protoc-gen-go-grpc
+RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.34.1 && \
+    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
+
 ENV GONOSUMCHECK=*
 ENV GOFLAGS=-mod=mod
 
-# Copy only go.mod first for better layer caching
 COPY go.mod ./
 RUN go mod download
 
-# Copy source and build a static binary
 COPY . .
+
+# Generate Go stubs from proto definitions
+RUN protoc -I . \
+    --go_out=paths=source_relative:. \
+    --go-grpc_out=paths=source_relative:. \
+    proto/review/review.proto
+
+RUN protoc -I . \
+    --go_out=paths=source_relative:. \
+    --go-grpc_out=paths=source_relative:. \
+    proto/position/position.proto
+
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o gateway .
 
 # ── Runtime stage ──────────────────────────────────────────────

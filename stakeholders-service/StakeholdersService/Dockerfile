@@ -12,6 +12,7 @@ RUN dotnet publish StakeholdersService.csproj -c Release -o /app/publish
 
 FROM base AS final
 WORKDIR /app
-ENV ASPNETCORE_URLS=http://+:80
 COPY --from=publish /app/publish .
+EXPOSE 80
+EXPOSE 5001
 CMD ["dotnet", "StakeholdersService.dll"]
