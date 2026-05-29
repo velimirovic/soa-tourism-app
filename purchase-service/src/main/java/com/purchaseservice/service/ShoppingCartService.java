@@ -41,7 +41,7 @@ public class ShoppingCartService {
         this.tokenRepository = tokenRepository;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public CartResponse getCart(Long touristId) {
         ShoppingCart cart = getOrCreateCart(touristId);
         return CartResponse.from(cart);
