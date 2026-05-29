@@ -73,7 +73,11 @@ export class ProfileComponent implements OnInit {
       },
       error: err => {
         if (err.status === 404) {
-          if (this.isOwnProfile) this.editMode = true;
+          if (this.isOwnProfile) {
+            this.editMode = true;
+          } else {
+            this.errorMsg = 'This user has not set up a profile yet.';
+          }
         } else {
           this.errorMsg = 'Failed to load profile.';
         }
