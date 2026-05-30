@@ -7,21 +7,27 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.purchaseservice.dto.AddToCartRequest;
 import com.purchaseservice.dto.CartResponse;
 import com.purchaseservice.dto.TourPurchaseTokenResponse;
 import com.purchaseservice.model.OrderItem;
+import com.purchaseservice.model.Purchase;
 import com.purchaseservice.model.ShoppingCart;
 import com.purchaseservice.model.TourPurchaseToken;
+import com.purchaseservice.repository.PurchaseRepository;
 import com.purchaseservice.repository.ShoppingCartRepository;
 import com.purchaseservice.repository.TourPurchaseTokenRepository;
 
@@ -30,15 +36,19 @@ public class ShoppingCartService {
 
     private final ShoppingCartRepository cartRepository;
     private final TourPurchaseTokenRepository tokenRepository;
+    private final PurchaseRepository purchaseRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final RestTemplate restTemplate = new RestTemplate();
 
     @Value("${tour.service.base-url:http://tour-service:8080}")
     private String tourServiceBaseUrl;
 
     public ShoppingCartService(ShoppingCartRepository cartRepository,
-                               TourPurchaseTokenRepository tokenRepository) {
-        this.cartRepository  = cartRepository;
-        this.tokenRepository = tokenRepository;
+                               TourPurchaseTokenRepository tokenRepository,
+                               PurchaseRepository purchaseRepository) {
+        this.cartRepository     = cartRepository;
+        this.tokenRepository    = tokenRepository;
+        this.purchaseRepository = purchaseRepository;
     }
 
     @Transactional
@@ -93,18 +103,42 @@ public class ShoppingCartService {
             throw new IllegalStateException("Cart is empty");
         }
 
-        List<TourPurchaseToken> tokens = cart.getItems().stream()
-                .map(item -> tokenRepository.findByTouristIdAndTourId(touristId, item.getTourId())
+        List<TourPurchaseToken> tokens = new ArrayList<>();
+
+        for (OrderItem item : cart.getItems()) {
+            // SAGA korak 1: kreiraj kupovinu sa statusom PENDING
+            Purchase purchase = new Purchase();
+            purchase.setTouristId(touristId);
+            purchase.setTourId(item.getTourId());
+            purchase.setStatus("PENDING");
+            purchaseRepository.save(purchase);
+
+            // SAGA korak 2: provjeri dostupnost ture na tour-service (Choreography)
+            boolean available = checkTourAvailability(item.getTourId());
+
+            if (available) {
+                // SAGA korak 3a: tura dostupna — CONFIRMED, kreiraj token
+                purchase.setStatus("CONFIRMED");
+                purchaseRepository.save(purchase);
+
+                TourPurchaseToken t = tokenRepository
+                        .findByTouristIdAndTourId(touristId, item.getTourId())
                         .orElseGet(() -> {
-                            TourPurchaseToken t = new TourPurchaseToken();
-                            t.setTouristId(touristId);
-                            t.setTourId(item.getTourId());
-                            t.setTourName(item.getTourName());
-                            t.setToken(UUID.randomUUID().toString());
-                            t.setPurchasedAt(LocalDateTime.now());
-                            return tokenRepository.save(t);
-                        }))
-                .collect(Collectors.toList());
+                            TourPurchaseToken token = new TourPurchaseToken();
+                            token.setTouristId(touristId);
+                            token.setTourId(item.getTourId());
+                            token.setTourName(item.getTourName());
+                            token.setToken(UUID.randomUUID().toString());
+                            token.setPurchasedAt(LocalDateTime.now());
+                            return tokenRepository.save(token);
+                        });
+                tokens.add(t);
+            } else {
+                // SAGA kompenzacija: tura nije dostupna — CANCELLED, token se ne kreira
+                purchase.setStatus("CANCELLED");
+                purchaseRepository.save(purchase);
+            }
+        }
 
         cart.getItems().clear();
         recalculate(cart);
@@ -141,6 +175,21 @@ public class ShoppingCartService {
                 .map(OrderItem::getPrice)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         cart.setTotalPrice(total);
+    }
+
+    // SAGA: Choreography — purchase-service pita tour-service o dostupnosti ture
+    private boolean checkTourAvailability(Long tourId) {
+        try {
+            String url = tourServiceBaseUrl + "/tours/" + tourId + "/availability";
+            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                Object available = response.getBody().get("available");
+                return Boolean.TRUE.equals(available);
+            }
+            return false;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private void verifyTourPublished(Long tourId, String authHeader) {

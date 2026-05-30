@@ -48,6 +48,9 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader());
 });
 
+// ── HTTP Client (za SAGA pozive ka stakeholders-service) ──────────────────────
+builder.Services.AddHttpClient();
+
 // ── OpenAPI / Controllers ─────────────────────────────────────────────────────
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();

@@ -545,6 +545,19 @@ public class TourController {
         return ResponseEntity.ok(reviews);
     }
 
+    // GET /tours/{tourId}/availability — SAGA Choreography: purchase-service poziva ovaj endpoint
+    @GetMapping("/{tourId}/availability")
+    public ResponseEntity<?> checkAvailability(@PathVariable Long tourId) {
+        return tourRepository.findById(tourId)
+                .map(tour -> {
+                    boolean available = "PUBLISHED".equals(tour.getStatus());
+                    String reason = available ? "Tour is available for purchase"
+                                              : "Tour is not published (status: " + tour.getStatus() + ")";
+                    return ResponseEntity.ok(Map.of("available", available, "reason", reason));
+                })
+                .orElse(ResponseEntity.ok(Map.of("available", false, "reason", "Tour not found")));
+    }
+
     // ─── Helperi ───────────────────────────────────────────────────────────────
 
     private void recalculateLength(Tour tour) {

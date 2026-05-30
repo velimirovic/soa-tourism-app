@@ -4,10 +4,8 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace StakeholdersService.Migrations
 {
-    /// <inheritdoc />
-    public partial class AddPositionToUserProfile : Migration
+    public partial class EnsurePositionColumns : Migration
     {
-        /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.Sql(@"
@@ -17,16 +15,10 @@ namespace StakeholdersService.Migrations
             ");
         }
 
-        /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "CurrentLatitude",
-                table: "UserProfiles");
-
-            migrationBuilder.DropColumn(
-                name: "CurrentLongitude",
-                table: "UserProfiles");
+            migrationBuilder.DropColumn(name: "CurrentLatitude", table: "UserProfiles");
+            migrationBuilder.DropColumn(name: "CurrentLongitude", table: "UserProfiles");
         }
     }
 }

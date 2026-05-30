@@ -3,7 +3,7 @@ package com.tourservice.grpc;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.springframework.stereotype.Service;
+import net.devh.boot.grpc.server.service.GrpcService;
 
 import com.tourservice.dto.CheckPositionResponse;
 import com.tourservice.dto.CompletedKeyPointResponse;
@@ -13,7 +13,7 @@ import com.tourservice.service.TourExecutionService;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 
-@Service
+@GrpcService
 public class TourExecutionGrpcService extends TourExecutionServiceGrpc.TourExecutionServiceImplBase {
 
     private final TourExecutionService executionService;

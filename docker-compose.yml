@@ -20,6 +20,7 @@ services:
       FOLLOWERS_SERVICE_URL: http://followers-service:8084
       PURCHASE_SERVICE_URL: http://purchase-service:8080
       TOUR_SERVICE_GRPC_URL: tour-service:9090
+      STAKEHOLDERS_SERVICE_GRPC_URL: stakeholders-service:5001
     depends_on:
       - auth-service
       - blog-service
@@ -37,6 +38,7 @@ services:
       - application
     ports:
       - "8081:80"
+      - "5001:5001"
     environment:
       DATABASE_HOST: stakeholders-db
       DATABASE_PORT: 5432
@@ -81,8 +83,10 @@ services:
       DATABASE_NAME: auth
       JWT_KEY: change-me-in-production-min32chars!!
       JWT_ISSUER: AuthService
+      STAKEHOLDERS_SERVICE_URL: http://stakeholders-service:80
     depends_on:
-      - auth-db
+      auth-db:
+        condition: service_healthy
 
   auth-db:
     image: postgres:16
@@ -97,6 +101,11 @@ services:
       - "5435:5432"
     volumes:
       - auth-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   tour-service:
     build:
@@ -213,8 +222,10 @@ services:
       DATABASE_USER: postgres
       DATABASE_PASSWORD: super
       DATABASE_NAME: purchases
+      TOUR_SERVICE_URL: http://tour-service:8080
     depends_on:
       - purchase-db
+      - tour-service
 
   purchase-db:
     image: postgres:16
