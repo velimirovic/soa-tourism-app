@@ -6,9 +6,10 @@ WORKDIR /app
 # Install protoc and protobuf dev headers
 RUN apk add --no-cache protobuf protobuf-dev
 
-# Install protoc-gen-go and protoc-gen-go-grpc
+# Install protoc-gen-go, protoc-gen-go-grpc and protoc-gen-grpc-gateway
 RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.34.1 && \
-    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
+    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0 && \
+    go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.19.1
 
 
 ENV GONOSUMCHECK=*
@@ -31,6 +32,13 @@ RUN protoc -I . \
     --go_out=paths=source_relative:. \
     --go-grpc_out=paths=source_relative:. \
     proto/position/position.proto
+
+RUN protoc -I . \
+    -I ./proto \
+    --go_out=paths=source_relative:. \
+    --go-grpc_out=paths=source_relative:. \
+    --grpc-gateway_out=paths=source_relative:. \
+    proto/tour_execution.proto
 
 
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o gateway .

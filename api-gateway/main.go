@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -109,37 +108,6 @@ func newReverseProxy(target string) http.Handler {
 	return proxy
 }
 
-// extractUserID parsira JWT token i vraća user ID iz "sub" claim-a
-func extractUserID(r *http.Request) (int64, error) {
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
-		return 0, fmt.Errorf("missing token")
-	}
-	tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
-	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
-		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, jwt.ErrSignatureInvalid
-		}
-		return jwtKey, nil
-	})
-	if err != nil || !token.Valid {
-		return 0, fmt.Errorf("invalid token")
-	}
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		return 0, fmt.Errorf("invalid claims")
-	}
-	sub, ok := claims["sub"]
-	if !ok {
-		return 0, fmt.Errorf("missing sub claim")
-	}
-	id, err := strconv.ParseInt(fmt.Sprintf("%v", sub), 10, 64)
-	if err != nil {
-		return 0, fmt.Errorf("invalid sub claim")
-	}
-	return id, nil
-}
-
 // ── tourHandler: POST /api/tours/{id}/reviews → gRPC, ostalo → HTTP proxy ──
 
 type tourHandler struct {
@@ -148,11 +116,9 @@ type tourHandler struct {
 }
 
 func (h *tourHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// Ukloni /api/tours/ prefiks i podijeli putanju
 	path := strings.TrimPrefix(r.URL.Path, "/api/tours/")
 	parts := strings.Split(strings.Trim(path, "/"), "/")
 
-	// POST /api/tours/{tourId}/reviews
 	if r.Method == http.MethodPost && len(parts) == 2 && parts[1] == "reviews" {
 		tourID, err := strconv.ParseInt(parts[0], 10, 64)
 		if err != nil {
@@ -167,7 +133,7 @@ func (h *tourHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *tourHandler) handleCreateReview(w http.ResponseWriter, r *http.Request, tourID int64) {
-	touristID, err := extractUserID(r)
+	touristID, err := extractUserID(r.Header.Get("Authorization"))
 	if err != nil {
 		http.Error(w, `{"error":"Unauthorized"}`, http.StatusUnauthorized)
 		return
@@ -220,7 +186,7 @@ func (h *tourHandler) handleCreateReview(w http.ResponseWriter, r *http.Request,
 	json.NewEncoder(w).Encode(result)
 }
 
-// ── stakeholdersHandler: PUT /api/stakeholders/profile/{id}/position → gRPC, ostalo → HTTP proxy ──
+// ── stakeholdersHandler: PUT /api/stakeholders/profile/{id}/position → gRPC ──
 
 type stakeholdersHandler struct {
 	proxy          http.Handler
@@ -228,7 +194,6 @@ type stakeholdersHandler struct {
 }
 
 func (h *stakeholdersHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// PUT /api/stakeholders/profile/{userId}/position
 	path := strings.TrimPrefix(r.URL.Path, "/api/stakeholders/profile/")
 	if r.Method == http.MethodPut && strings.HasSuffix(path, "/position") {
 		userIDStr := strings.TrimSuffix(path, "/position")
@@ -316,27 +281,19 @@ func main() {
 	if tourServiceGrpcURL == "" {
 		tourServiceGrpcURL = "tour-service:9090"
 	}
+	stakeholdersGrpcURL := os.Getenv("STAKEHOLDERS_SERVICE_GRPC_URL")
+	if stakeholdersGrpcURL == "" {
+		stakeholdersGrpcURL = "stakeholders-service:5001"
+	}
 
-	// ── gRPC-Gateway: HTTP/JSON → gRPC transcoding ──────────────────────────────
-	// Follows the grpc-gateway pattern: gateway translates REST requests to gRPC
-	// calls on the tour-service using the routes defined in tour_execution.proto.
+	// gRPC-Gateway za tour execution (StartTour, CheckPosition)
 	ctx := context.Background()
 	gwMux, err := newGatewayMux(ctx, tourServiceGrpcURL)
 	if err != nil {
 		log.Fatalf("Failed to create gRPC gateway: %v", err)
 	}
 
-	// gRPC URL-ovi
-	tourServiceGrpcURL := os.Getenv("TOUR_SERVICE_GRPC_URL")
-	if tourServiceGrpcURL == "" {
-		tourServiceGrpcURL = "tour-service:9090"
-	}
-	stakeholdersGrpcURL := os.Getenv("STAKEHOLDERS_SERVICE_GRPC_URL")
-	if stakeholdersGrpcURL == "" {
-		stakeholdersGrpcURL = "stakeholders-service:5001"
-	}
-
-	// gRPC konekcija ka tour-service
+	// gRPC konekcija ka tour-service (za reviews)
 	reviewConn, err := grpc.NewClient(tourServiceGrpcURL,
 		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -345,7 +302,7 @@ func main() {
 	defer reviewConn.Close()
 	reviewClient := reviewpb.NewReviewServiceClient(reviewConn)
 
-	// gRPC konekcija ka stakeholders-service
+	// gRPC konekcija ka stakeholders-service (za position)
 	positionConn, err := grpc.NewClient(stakeholdersGrpcURL,
 		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -357,11 +314,12 @@ func main() {
 	mux := http.NewServeMux()
 	tourProxy := newReverseProxy(tourServiceURL)
 
-<<<<<<< HEAD
-=======
-	// ── gRPC-backed routes ───────────────────────────────────────────────────────
+	mux.Handle("/api/auth", newReverseProxy(authServiceURL))
+	mux.Handle("/api/auth/", newReverseProxy(authServiceURL))
+	mux.Handle("/api/blogs", newReverseProxy(blogServiceURL))
+	mux.Handle("/api/blogs/", newReverseProxy(blogServiceURL))
+
 	// POST /api/tours/executions → gRPC StartTour via gateway
-	// All other methods → REST proxy (e.g. GET to fetch active execution)
 	mux.HandleFunc("/api/tours/executions", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			r.URL.Path = strings.TrimPrefix(r.URL.Path, "/api")
@@ -371,8 +329,7 @@ func main() {
 		}
 	})
 
-	// POST /api/tours/executions/{id}/check-position → gRPC CheckPosition via gateway
-	// All other paths/methods → REST proxy (complete, abandon, get by id, etc.)
+	// POST /api/tours/executions/{id}/check-position → gRPC CheckPosition
 	mux.HandleFunc("/api/tours/executions/", func(w http.ResponseWriter, r *http.Request) {
 		path := strings.TrimPrefix(r.URL.Path, "/api/tours/executions/")
 		parts := strings.Split(strings.Trim(path, "/"), "/")
@@ -384,30 +341,15 @@ func main() {
 		}
 	})
 
-	// ── REST proxy routes ────────────────────────────────────────────────────────
->>>>>>> main
-	mux.Handle("/api/auth", newReverseProxy(authServiceURL))
-	mux.Handle("/api/auth/", newReverseProxy(authServiceURL))
-	mux.Handle("/api/blogs", newReverseProxy(blogServiceURL))
-	mux.Handle("/api/blogs/", newReverseProxy(blogServiceURL))
-<<<<<<< HEAD
-
-	// Tour handler: POST /api/tours/{id}/reviews → gRPC, ostalo → HTTP proxy
-	tourProxy := newReverseProxy(tourServiceURL)
+	// POST /api/tours/{id}/reviews → gRPC, ostalo → HTTP proxy
 	mux.Handle("/api/tours", &tourHandler{proxy: tourProxy, reviewClient: reviewClient})
 	mux.Handle("/api/tours/", &tourHandler{proxy: tourProxy, reviewClient: reviewClient})
 
-	// Stakeholders handler: PUT /api/stakeholders/profile/{id}/position → gRPC, ostalo → HTTP proxy
+	// PUT /api/stakeholders/profile/{id}/position → gRPC, ostalo → HTTP proxy
 	stakeholdersProxy := newReverseProxy(stakeholdersServiceURL)
 	mux.Handle("/api/stakeholders", &stakeholdersHandler{proxy: stakeholdersProxy, positionClient: positionClient})
 	mux.Handle("/api/stakeholders/", &stakeholdersHandler{proxy: stakeholdersProxy, positionClient: positionClient})
 
-=======
-	mux.Handle("/api/tours", tourProxy)
-	mux.Handle("/api/tours/", tourProxy)
-	mux.Handle("/api/stakeholders", newReverseProxy(stakeholdersServiceURL))
-	mux.Handle("/api/stakeholders/", newReverseProxy(stakeholdersServiceURL))
->>>>>>> main
 	mux.Handle("/api/followers", newReverseProxy(followersServiceURL))
 	mux.Handle("/api/followers/", newReverseProxy(followersServiceURL))
 	mux.Handle("/api/purchases", newReverseProxy(purchaseServiceURL))
@@ -427,16 +369,9 @@ func main() {
 	}
 
 	log.Printf("API Gateway pokrenut na portu :%s", port)
-<<<<<<< HEAD
-	log.Printf("  /api/auth/*          -> %s (HTTP)", authServiceURL)
-	log.Printf("  /api/blogs/*         -> %s (HTTP)", blogServiceURL)
-	log.Printf("  /api/tours/*         -> %s (HTTP), reviews -> %s (gRPC)", tourServiceURL, tourServiceGrpcURL)
-	log.Printf("  /api/stakeholders/*  -> %s (HTTP), position -> %s (gRPC)", stakeholdersServiceURL, stakeholdersGrpcURL)
-	log.Printf("  /api/followers/*     -> %s (HTTP)", followersServiceURL)
-	log.Printf("  /api/purchases/*     -> %s (HTTP)", purchaseServiceURL)
-=======
-	log.Printf("  gRPC Gateway → tour-service: %s", tourServiceGrpcURL)
->>>>>>> main
+	log.Printf("  /api/tours/executions → gRPC gateway (%s)", tourServiceGrpcURL)
+	log.Printf("  /api/tours/{id}/reviews → gRPC (%s)", tourServiceGrpcURL)
+	log.Printf("  /api/stakeholders/profile/{id}/position → gRPC (%s)", stakeholdersGrpcURL)
 
 	if err := http.ListenAndServe(":"+port, handler); err != nil {
 		log.Fatalf("Gateway se ugasio sa greškom: %v", err)
