@@ -1,0 +1,106 @@
+<div class="mp-page">
+
+  <!-- Header -->
+  <div class="mp-header">
+    <div class="mp-header__icon">
+      <span class="material-icons">receipt_long</span>
+    </div>
+    <div>
+      <h2 class="mp-header__title">My Purchases</h2>
+      <p class="mp-header__sub">Tours you have purchased.</p>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="mp-state">
+    <span class="material-icons spinning">sync</span> Loading purchases…
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="error" class="mp-state mp-state--error">
+    <span class="material-icons">error</span> {{ error }}
+  </div>
+
+  <!-- Empty -->
+  <div *ngIf="!loading && !error && tokens.length === 0" class="mp-empty">
+    <span class="material-icons mp-empty__icon">explore_off</span>
+    <p class="mp-empty__text">You haven't purchased any tours yet.</p>
+    <button class="mp-btn mp-btn--primary" (click)="goToTours()">
+      <span class="material-icons">explore</span>
+      Browse Tours
+    </button>
+  </div>
+
+  <!-- Purchased tours list -->
+  <div *ngIf="!loading && !error && tokens.length > 0" class="mp-list">
+
+    <div class="mp-card" *ngFor="let t of tokens"
+         [class.mp-card--completed]="tourStatus(t.tourId) === 'completed'"
+         [class.mp-card--active]="tourStatus(t.tourId) === 'active'">
+
+      <div class="mp-card__header">
+        <span class="material-icons mp-card__icon"
+              [class.mp-card__icon--completed]="tourStatus(t.tourId) === 'completed'"
+              [class.mp-card__icon--active]="tourStatus(t.tourId) === 'active'">
+          {{ tourStatus(t.tourId) === 'completed' ? 'verified' : tourStatus(t.tourId) === 'active' ? 'directions_run' : 'map' }}
+        </span>
+        <div class="mp-card__title-wrap">
+          <div class="mp-card__name">{{ t.tourName }}</div>
+          <div class="mp-card__date">
+            <span class="material-icons">calendar_today</span>
+            Purchased: {{ t.purchasedAt | date: 'dd.MM.yyyy HH:mm' }}
+          </div>
+        </div>
+
+        <!-- Status badge -->
+        <span class="mp-card__badge"
+              [class.mp-card__badge--completed]="tourStatus(t.tourId) === 'completed'"
+              [class.mp-card__badge--active]="tourStatus(t.tourId) === 'active'">
+          {{ tourStatus(t.tourId) === 'completed' ? 'Completed' : tourStatus(t.tourId) === 'active' ? 'In Progress' : 'Purchased' }}
+        </span>
+      </div>
+
+      <div class="mp-card__actions">
+
+        <!-- Completed: only Tour Details + Leave Review hint -->
+        <ng-container *ngIf="tourStatus(t.tourId) === 'completed'">
+          <button class="mp-btn mp-btn--secondary" (click)="goToTour(t.tourId)">
+            <span class="material-icons">info</span>
+            Tour Details
+          </button>
+          <button class="mp-btn mp-btn--review" (click)="goToTour(t.tourId)">
+            <span class="material-icons">rate_review</span>
+            Leave Review
+          </button>
+        </ng-container>
+
+        <!-- Active: resume -->
+        <ng-container *ngIf="tourStatus(t.tourId) === 'active'">
+          <button class="mp-btn mp-btn--primary" (click)="startTour(t.tourId)">
+            <span class="material-icons">directions_run</span>
+            Resume Tour
+          </button>
+          <button class="mp-btn mp-btn--secondary" (click)="goToTour(t.tourId)">
+            <span class="material-icons">info</span>
+            Tour Details
+          </button>
+        </ng-container>
+
+        <!-- Not yet started -->
+        <ng-container *ngIf="tourStatus(t.tourId) === 'purchased'">
+          <button class="mp-btn mp-btn--primary" (click)="startTour(t.tourId)">
+            <span class="material-icons">play_arrow</span>
+            Start Tour
+          </button>
+          <button class="mp-btn mp-btn--secondary" (click)="goToTour(t.tourId)">
+            <span class="material-icons">info</span>
+            Tour Details
+          </button>
+        </ng-container>
+
+      </div>
+    </div>
+
+  </div>
+
+</div>

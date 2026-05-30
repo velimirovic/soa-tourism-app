@@ -123,6 +123,7 @@ services:
       DATABASE_PASSWORD: super
       DATABASE_NAME: tours
       JWT_KEY: change-me-in-production-min32chars!!
+      PURCHASE_SERVICE_URL: http://purchase-service:8080
     depends_on:
       - tour-db
 

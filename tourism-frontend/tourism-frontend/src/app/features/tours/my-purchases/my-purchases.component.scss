@@ -1,0 +1,190 @@
+.mp-page {
+  max-width: 760px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2rem;
+  padding-bottom: 3rem;
+}
+
+// ── Header ───────────────────────────────────────────────────────
+.mp-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 2rem;
+
+  &__icon {
+    width: 52px;
+    height: 52px;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    .material-icons { color: #fff; font-size: 28px; }
+  }
+
+  &__title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin: 0 0 4px;
+  }
+
+  &__sub {
+    font-size: 0.9rem;
+    color: #718096;
+    margin: 0;
+  }
+}
+
+// ── State ────────────────────────────────────────────────────────
+.mp-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3rem 0;
+  color: #aaa;
+  font-size: 14px;
+  justify-content: center;
+  .material-icons { font-size: 28px; }
+  &--error { color: #e05a5a; }
+}
+
+.spinning { animation: spin 1s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+// ── Empty ────────────────────────────────────────────────────────
+.mp-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 4rem 1rem;
+  text-align: center;
+
+  &__icon { font-size: 4rem; color: #c4b5fd; }
+  &__text { font-size: 1rem; color: #718096; margin: 0; }
+}
+
+// ── List ─────────────────────────────────────────────────────────
+.mp-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+// ── Card ─────────────────────────────────────────────────────────
+.mp-card {
+  background: #fff;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: box-shadow 0.18s;
+
+  &:hover { box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06); }
+
+  &--completed {
+    border-color: #d1fae5;
+    &:hover { box-shadow: 0 4px 18px rgba(34, 197, 94, 0.12); }
+  }
+
+  &--active {
+    border-color: #ddd4f5;
+    &:hover { box-shadow: 0 4px 18px rgba(168, 85, 247, 0.12); }
+  }
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  &__icon {
+    font-size: 26px;
+    color: #9ca3af;
+    flex-shrink: 0;
+    margin-top: 2px;
+
+    &--completed { color: #22c55e; }
+    &--active    { color: #a855f7; }
+  }
+
+  &__title-wrap { flex: 1; min-width: 0; }
+
+  &__name {
+    font-size: 16px;
+    font-weight: 700;
+    color: #2d2d4e;
+    margin-bottom: 4px;
+  }
+
+  &__date {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: #aaa;
+    .material-icons { font-size: 13px; }
+  }
+
+  &__badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    background: #f3f4f6;
+    color: #6b7280;
+
+    &--completed { background: #d1fae5; color: #16a34a; }
+    &--active    { background: #ede8f8; color: #7c3aed; }
+  }
+
+  &__actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+}
+
+// ── Buttons ──────────────────────────────────────────────────
+
+.mp-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 22px;
+  padding: 10px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  transition: opacity 0.2s;
+  .material-icons { font-size: 18px; }
+
+  &--primary {
+    background: linear-gradient(135deg, #c084fc, #7c3aed);
+    color: #fff;
+    &:hover { opacity: 0.88; }
+  }
+
+  &--secondary {
+    background: #f3f4f6;
+    color: #374151;
+    &:hover { background: #e5e7eb; }
+  }
+
+  &--review {
+    background: #fef3c7;
+    color: #92400e;
+    &:hover { background: #fde68a; }
+  }
+}

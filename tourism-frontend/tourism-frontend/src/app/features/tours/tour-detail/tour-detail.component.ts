@@ -5,6 +5,7 @@ import {
   TourService, TourDto, KeyPointDto,
   ReviewDto, CreateReviewRequest
 } from '../../../core/services/tour.service';
+import { PurchaseService } from '../../../core/services/purchase.service';
 import { AuthService } from '../../../core/services/auth.service';
 
 const iconDefault = L.icon({
@@ -32,6 +33,16 @@ export class TourDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   loading = true;
   error = '';
 
+  // Purchase state
+  purchased = false;
+  inCart = false;
+  addingToCart = false;
+  cartError = '';
+
+  // Review state
+  hasCompletedTour = false;
+  hasAlreadyReviewed = false;
+
   // Review form
   reviewRating = 5;
   reviewComment = '';
@@ -48,12 +59,14 @@ export class TourDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private tourService: TourService,
+    private purchaseService: PurchaseService,
     private authService: AuthService,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
+
     this.tourService.getTour(id).subscribe({
       next: (tour) => {
         this.tour = tour;
@@ -65,6 +78,19 @@ export class TourDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         this.cdr.detectChanges();
       }
     });
+
+    if (this.isTourist) {
+      this.purchaseService.checkPurchased(id).subscribe({
+        next: (res) => { this.purchased = res.purchased; this.cdr.detectChanges(); }
+      });
+      this.purchaseService.getCart().subscribe({
+        next: (cart) => { this.inCart = cart.items.some(i => i.tourId === id); this.cdr.detectChanges(); }
+      });
+      this.tourService.hasCompletedExecution(id).subscribe({
+        next: (res) => { this.hasCompletedTour = res.hasCompleted; this.cdr.detectChanges(); },
+        error: () => {}
+      });
+    }
   }
 
   ngAfterViewInit(): void {
@@ -75,6 +101,30 @@ export class TourDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.map) this.map.remove();
   }
 
+  get isTourist(): boolean { return this.authService.getUser()?.role === 'Tourist'; }
+
+  addToCart(): void {
+    if (!this.tour) return;
+    this.addingToCart = true;
+    this.cartError = '';
+    this.purchaseService.addToCart(this.tour.id, this.tour.name, this.tour.price).subscribe({
+      next: (cart) => {
+        this.inCart = true;
+        this.addingToCart = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.cartError = err?.error?.error ?? 'Failed to add to cart.';
+        this.addingToCart = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  goToCart(): void {
+    this.router.navigate(['/cart']);
+  }
+
   private loadKeyPointsAndReviews(tourId: number): void {
     this.tourService.getKeyPoints(tourId).subscribe({
       next: (kps) => {
@@ -83,8 +133,10 @@ export class TourDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         this.tourService.getReviews(tourId).subscribe({
           next: (reviews) => {
             this.reviews = reviews;
+            const myId = this.authService.getUser()?.id;
+            this.hasAlreadyReviewed = reviews.some(r => r.touristId === myId);
             this.loading = false;
-            this.cdr.detectChanges(); // section becomes display:block
+            this.cdr.detectChanges();
             setTimeout(() => this.map?.invalidateSize(), 50);
           },
           error: () => {
@@ -131,9 +183,23 @@ export class TourDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     });
 
     if (this.keyPoints.length >= 2) {
-      const latlngs = this.keyPoints.map(kp => [kp.latitude, kp.longitude] as L.LatLngTuple);
-      this.polyline = L.polyline(latlngs, { color: '#a855f7', weight: 3, dashArray: '6,6' })
-        .addTo(this.map);
+      const coords = this.keyPoints.map(kp => `${kp.longitude},${kp.latitude}`).join(';');
+      const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
+      fetch(url)
+        .then(r => r.json())
+        .then(data => {
+          if (!this.map) return;
+          const routeCoords: [number, number][] = data?.routes?.[0]?.geometry?.coordinates;
+          if (routeCoords?.length) {
+            const latlngs = routeCoords.map(([lng, lat]) => [lat, lng] as L.LatLngTuple);
+            this.polyline = L.polyline(latlngs, { color: '#a855f7', weight: 4 }).addTo(this.map);
+          }
+        })
+        .catch(() => {
+          if (!this.map) return;
+          const latlngs = this.keyPoints.map(kp => [kp.latitude, kp.longitude] as L.LatLngTuple);
+          this.polyline = L.polyline(latlngs, { color: '#a855f7', weight: 3, dashArray: '6,6' }).addTo(this.map);
+        });
     }
 
     if (this.keyPoints.length > 0) {
@@ -147,8 +213,6 @@ export class TourDetailComponent implements OnInit, AfterViewInit, OnDestroy {
   stars(n: number): number[] { return Array.from({ length: n }, (_, i) => i + 1); }
 
   difficultyClass(d: string): string { return d?.toLowerCase() ?? 'easy'; }
-
-  get isTourist(): boolean { return this.authService.getUser()?.role === 'Tourist'; }
 
   onReviewImageSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
@@ -188,6 +252,7 @@ export class TourDetailComponent implements OnInit, AfterViewInit, OnDestroy {
     this.tourService.addReview(this.tour.id, req).subscribe({
       next: (r) => {
         this.reviews = [r, ...this.reviews];
+        this.hasAlreadyReviewed = true;
         this.reviewRating = 5;
         this.reviewComment = '';
         this.reviewVisitDate = '';
@@ -202,6 +267,10 @@ export class TourDetailComponent implements OnInit, AfterViewInit, OnDestroy {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  startTour(): void {
+    if (this.tour) this.router.navigate(['/tours', this.tour.id, 'execute']);
   }
 
   goBack(): void { this.router.navigate(['/tours']); }
