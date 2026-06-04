@@ -1,0 +1,31 @@
+syntax = "proto3";
+package blog;
+
+service BlogService {
+  rpc CreateBlog(CreateBlogRequest) returns (BlogResponse);
+  rpc GetBlogById(GetBlogByIdRequest) returns (BlogResponse);
+}
+
+message CreateBlogRequest {
+  string title       = 1;
+  string description = 2;
+  repeated string images = 3;
+  string author_id       = 4;
+  string author_username = 5;
+}
+
+message GetBlogByIdRequest {
+  string id = 1;
+}
+
+message BlogResponse {
+  string id              = 1;
+  string title           = 2;
+  string description     = 3;
+  repeated string images = 4;
+  string author_id       = 5;
+  string author_username = 6;
+  string created_at      = 7;
+  string updated_at      = 8;
+  repeated string likes  = 9;
+}
