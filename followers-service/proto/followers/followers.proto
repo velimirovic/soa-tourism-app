@@ -1,0 +1,28 @@
+syntax = "proto3";
+package followers;
+option go_package = "followers-service/proto/followers;followers";
+
+service FollowersService {
+  rpc Follow(FollowRequest) returns (FollowResponse);
+  rpc IsFollowing(IsFollowingRequest) returns (IsFollowingResponse);
+}
+
+message FollowRequest {
+  string follower_id        = 1;
+  string follower_username  = 2;
+  string following_id       = 3;
+  string following_username = 4;
+}
+
+message FollowResponse {
+  string message = 1;
+}
+
+message IsFollowingRequest {
+  string follower_id  = 1;
+  string following_id = 2;
+}
+
+message IsFollowingResponse {
+  bool is_following = 1;
+}

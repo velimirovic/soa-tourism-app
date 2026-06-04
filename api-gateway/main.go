@@ -17,6 +17,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	blogpb "api-gateway/proto/blog"
+	followerspb "api-gateway/proto/followers"
 	positionpb "api-gateway/proto/position"
 	reviewpb "api-gateway/proto/review"
 )
@@ -245,6 +246,94 @@ func (h *stakeholdersHandler) handleUpdatePosition(w http.ResponseWriter, r *htt
 	json.NewEncoder(w).Encode(result)
 }
 
+// ── followersHandler: POST /api/followers/follow → gRPC Follow
+//                     GET  /api/followers/is-following/{id} → gRPC IsFollowing ──
+
+type followersHandler struct {
+	proxy          http.Handler
+	followersClient followerspb.FollowersServiceClient
+}
+
+func (h *followersHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	path := strings.TrimPrefix(r.URL.Path, "/api/followers")
+
+	if r.Method == http.MethodPost && path == "/follow" {
+		h.handleFollow(w, r)
+		return
+	}
+
+	if r.Method == http.MethodGet && strings.HasPrefix(path, "/is-following/") {
+		theirID := strings.TrimPrefix(path, "/is-following/")
+		if theirID != "" {
+			h.handleIsFollowing(w, r, theirID)
+			return
+		}
+	}
+
+	h.proxy.ServeHTTP(w, r)
+}
+
+func (h *followersHandler) handleFollow(w http.ResponseWriter, r *http.Request) {
+	userClaims, err := extractUserClaims(r.Header.Get("Authorization"))
+	if err != nil {
+		http.Error(w, `{"error":"Unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+
+	var body struct {
+		FollowingID       string `json:"followingId"`
+		FollowingUsername string `json:"followingUsername"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.FollowingID == "" {
+		http.Error(w, `{"error":"followingId required"}`, http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := h.followersClient.Follow(ctx, &followerspb.FollowRequest{
+		FollowerId:       userClaims.ID,
+		FollowerUsername: userClaims.Username,
+		FollowingId:      body.FollowingID,
+		FollowingUsername: body.FollowingUsername,
+	})
+	if err != nil {
+		log.Printf("gRPC Follow error: %v", err)
+		writeGrpcError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": resp.Message})
+}
+
+func (h *followersHandler) handleIsFollowing(w http.ResponseWriter, r *http.Request, theirID string) {
+	userClaims, err := extractUserClaims(r.Header.Get("Authorization"))
+	if err != nil {
+		http.Error(w, `{"error":"Unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := h.followersClient.IsFollowing(ctx, &followerspb.IsFollowingRequest{
+		FollowerId:  userClaims.ID,
+		FollowingId: theirID,
+	})
+	if err != nil {
+		log.Printf("gRPC IsFollowing error: %v", err)
+		writeGrpcError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]bool{"isFollowing": resp.IsFollowing})
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 func main() {
@@ -286,6 +375,10 @@ func main() {
 	if stakeholdersGrpcURL == "" {
 		stakeholdersGrpcURL = "stakeholders-service:5001"
 	}
+	followersGrpcURL := os.Getenv("FOLLOWERS_SERVICE_GRPC_URL")
+	if followersGrpcURL == "" {
+		followersGrpcURL = "followers-service:9091"
+	}
 	blogServiceGrpcURL := os.Getenv("BLOG_SERVICE_GRPC_URL")
 	if blogServiceGrpcURL == "" {
 		blogServiceGrpcURL = "blog-service:50051"
@@ -324,6 +417,15 @@ func main() {
 	}
 	defer positionConn.Close()
 	positionClient := positionpb.NewPositionServiceClient(positionConn)
+
+	// gRPC konekcija ka followers-service (za follow i isFollowing)
+	followersConn, err := grpc.NewClient(followersGrpcURL,
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("Nije moguće konektovati se na followers-service gRPC: %v", err)
+	}
+	defer followersConn.Close()
+	followersClient := followerspb.NewFollowersServiceClient(followersConn)
 
 	mux := http.NewServeMux()
 	tourProxy := newReverseProxy(tourServiceURL)
@@ -366,8 +468,12 @@ func main() {
 	mux.Handle("/api/stakeholders", &stakeholdersHandler{proxy: stakeholdersProxy, positionClient: positionClient})
 	mux.Handle("/api/stakeholders/", &stakeholdersHandler{proxy: stakeholdersProxy, positionClient: positionClient})
 
-	mux.Handle("/api/followers", newReverseProxy(followersServiceURL))
-	mux.Handle("/api/followers/", newReverseProxy(followersServiceURL))
+	// POST /api/followers/follow → gRPC Follow
+	// GET  /api/followers/is-following/{id} → gRPC IsFollowing
+	// ostalo → HTTP proxy
+	followersProxy := newReverseProxy(followersServiceURL)
+	mux.Handle("/api/followers", &followersHandler{proxy: followersProxy, followersClient: followersClient})
+	mux.Handle("/api/followers/", &followersHandler{proxy: followersProxy, followersClient: followersClient})
 	mux.Handle("/api/purchases", newReverseProxy(purchaseServiceURL))
 	mux.Handle("/api/purchases/", newReverseProxy(purchaseServiceURL))
 
@@ -388,6 +494,8 @@ func main() {
 	log.Printf("  /api/tours/executions → gRPC gateway (%s)", tourServiceGrpcURL)
 	log.Printf("  /api/tours/{id}/reviews → gRPC (%s)", tourServiceGrpcURL)
 	log.Printf("  /api/stakeholders/profile/{id}/position → gRPC (%s)", stakeholdersGrpcURL)
+	log.Printf("  /api/followers/follow → gRPC (%s)", followersGrpcURL)
+	log.Printf("  /api/followers/is-following/{id} → gRPC (%s)", followersGrpcURL)
 
 	if err := http.ListenAndServe(":"+port, handler); err != nil {
 		log.Fatalf("Gateway se ugasio sa greškom: %v", err)

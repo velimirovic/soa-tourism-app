@@ -43,6 +43,11 @@ RUN protoc -I . \
 RUN protoc -I . \
     --go_out=paths=source_relative:. \
     --go-grpc_out=paths=source_relative:. \
+    proto/followers/followers.proto
+
+RUN protoc -I . \
+    --go_out=paths=source_relative:. \
+    --go-grpc_out=paths=source_relative:. \
     proto/blog/blog.proto
 
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o gateway .
