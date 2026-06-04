@@ -21,6 +21,7 @@ services:
       PURCHASE_SERVICE_URL: http://purchase-service:8080
       TOUR_SERVICE_GRPC_URL: tour-service:9090
       STAKEHOLDERS_SERVICE_GRPC_URL: stakeholders-service:5001
+      FOLLOWERS_SERVICE_GRPC_URL: followers-service:9091
     depends_on:
       - auth-service
       - blog-service
@@ -179,8 +180,10 @@ services:
       - application
     ports:
       - "8084:8084"
+      - "9091:9091"
     environment:
       PORT: 8084
+      GRPC_PORT: 9091
       JWT_SECRET: change-me-in-production-min32chars!!
       NEO4J_URI: bolt://neo4j:7687
       NEO4J_USERNAME: neo4j
