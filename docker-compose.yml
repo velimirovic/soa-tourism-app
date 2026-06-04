@@ -22,6 +22,7 @@ services:
       TOUR_SERVICE_GRPC_URL: tour-service:9090
       STAKEHOLDERS_SERVICE_GRPC_URL: stakeholders-service:5001
       FOLLOWERS_SERVICE_GRPC_URL: followers-service:9091
+      BLOG_SERVICE_GRPC_URL: blog-service:50051
     depends_on:
       - auth-service
       - blog-service
@@ -151,8 +152,10 @@ services:
       - application
     ports:
       - "3001:3001"
+      - "50051:50051"
     environment:
       PORT: 3001
+      GRPC_PORT: 50051
       MONGO_URI: mongodb://blog-db:27017/blog
       JWT_SECRET: change-me-in-production-min32chars!!
       FOLLOWERS_SERVICE_URL: http://followers-service:8084

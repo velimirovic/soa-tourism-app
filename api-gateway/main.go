@@ -16,6 +16,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
+	blogpb "api-gateway/proto/blog"
 	followerspb "api-gateway/proto/followers"
 	positionpb "api-gateway/proto/position"
 	reviewpb "api-gateway/proto/review"
@@ -378,6 +379,10 @@ func main() {
 	if followersGrpcURL == "" {
 		followersGrpcURL = "followers-service:9091"
 	}
+	blogServiceGrpcURL := os.Getenv("BLOG_SERVICE_GRPC_URL")
+	if blogServiceGrpcURL == "" {
+		blogServiceGrpcURL = "blog-service:50051"
+	}
 
 	// gRPC-Gateway za tour execution (StartTour, CheckPosition)
 	ctx := context.Background()
@@ -394,6 +399,15 @@ func main() {
 	}
 	defer reviewConn.Close()
 	reviewClient := reviewpb.NewReviewServiceClient(reviewConn)
+
+	// gRPC konekcija ka blog-service (CreateBlog, GetBlogById)
+	blogConn, err := grpc.NewClient(blogServiceGrpcURL,
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("Nije moguće konektovati se na blog-service gRPC: %v", err)
+	}
+	defer blogConn.Close()
+	blogClient := blogpb.NewBlogServiceClient(blogConn)
 
 	// gRPC konekcija ka stakeholders-service (za position)
 	positionConn, err := grpc.NewClient(stakeholdersGrpcURL,
@@ -418,8 +432,10 @@ func main() {
 
 	mux.Handle("/api/auth", newReverseProxy(authServiceURL))
 	mux.Handle("/api/auth/", newReverseProxy(authServiceURL))
-	mux.Handle("/api/blogs", newReverseProxy(blogServiceURL))
-	mux.Handle("/api/blogs/", newReverseProxy(blogServiceURL))
+	// POST /api/blogs → gRPC CreateBlog, GET /api/blogs/:id → gRPC GetBlogById, ostalo → HTTP proxy
+	blogProxy := newReverseProxy(blogServiceURL)
+	mux.Handle("/api/blogs", &blogHandler{proxy: blogProxy, blogClient: blogClient})
+	mux.Handle("/api/blogs/", &blogHandler{proxy: blogProxy, blogClient: blogClient})
 
 	// POST /api/tours/executions → gRPC StartTour via gateway
 	mux.HandleFunc("/api/tours/executions", func(w http.ResponseWriter, r *http.Request) {
