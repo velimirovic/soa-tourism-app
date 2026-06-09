@@ -128,6 +128,11 @@ services:
       PURCHASE_SERVICE_URL: http://purchase-service:8080
     depends_on:
       - tour-db
+      - loki
+    logging:
+      driver: json-file
+      options:
+        tag: "tour-service"
 
   tour-db:
     image: postgres:16
@@ -257,6 +262,48 @@ services:
     ports:
       - "4200:80"
 
+  # ── Log aggregation ─────────────────────────────────────────────
+  loki:
+    image: grafana/loki:2.9.4
+    restart: on-failure
+    networks:
+      - application
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/loki-config.yml
+    volumes:
+      - loki-data:/loki
+      - ./loki-config.yml:/etc/loki/loki-config.yml
+
+  promtail:
+    image: grafana/promtail:2.9.4
+    restart: on-failure
+    networks:
+      - application
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./promtail-config.yml:/etc/promtail/config.yml
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+
+  grafana:
+    image: grafana/grafana:10.4.2
+    restart: on-failure
+    networks:
+      - application
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - loki
+
 networks:
   application:
     driver: bridge
@@ -268,3 +315,5 @@ volumes:
   blog-db-data:
   neo4j-data:
   purchase-db-data:
+  loki-data:
+  grafana-data:
