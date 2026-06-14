@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using StakeholdersService.Infrastructure;
 using StakeholdersService.Grpc;
+using StakeholdersService.Services;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -62,6 +63,9 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod()
               .AllowAnyHeader());
 });
+
+// ── SAGA Consumer (RabbitMQ) ──────────────────────────────────────────────────
+builder.Services.AddHostedService<ProfileSagaConsumer>();
 
 // ── gRPC ─────────────────────────────────────────────────────────────────────
 builder.Services.AddGrpc();

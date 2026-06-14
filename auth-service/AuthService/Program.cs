@@ -1,4 +1,5 @@
 using AuthService.Infrastructure;
+using AuthService.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -48,8 +49,8 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader());
 });
 
-// ── HTTP Client (za SAGA pozive ka stakeholders-service) ──────────────────────
-builder.Services.AddHttpClient();
+// ── SAGA Messaging (RabbitMQ) ─────────────────────────────────────────────────
+builder.Services.AddSingleton<SagaMessagingService>();
 
 // ── OpenAPI / Controllers ─────────────────────────────────────────────────────
 builder.Services.AddOpenApi();

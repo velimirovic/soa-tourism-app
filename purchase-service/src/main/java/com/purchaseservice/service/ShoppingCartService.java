@@ -13,13 +13,14 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.purchaseservice.config.RabbitMQConfig;
 import com.purchaseservice.dto.AddToCartRequest;
 import com.purchaseservice.dto.CartResponse;
 import com.purchaseservice.dto.TourPurchaseTokenResponse;
@@ -38,7 +39,9 @@ public class ShoppingCartService {
     private final TourPurchaseTokenRepository tokenRepository;
     private final PurchaseRepository purchaseRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final RestTemplate restTemplate = new RestTemplate();
+
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
 
     @Value("${tour.service.base-url:http://tour-service:8080}")
     private String tourServiceBaseUrl;
@@ -113,8 +116,8 @@ public class ShoppingCartService {
             purchase.setStatus("PENDING");
             purchaseRepository.save(purchase);
 
-            // SAGA korak 2: provjeri dostupnost ture na tour-service (Choreography)
-            boolean available = checkTourAvailability(item.getTourId());
+            // SAGA korak 2: provjeri dostupnost ture via RabbitMQ (Choreography)
+            boolean available = checkTourAvailabilityViaRabbitMQ(item.getTourId());
 
             if (available) {
                 // SAGA korak 3a: tura dostupna — CONFIRMED, kreiraj token
@@ -177,16 +180,15 @@ public class ShoppingCartService {
         cart.setTotalPrice(total);
     }
 
-    // SAGA: Choreography — purchase-service pita tour-service o dostupnosti ture
-    private boolean checkTourAvailability(Long tourId) {
+    // SAGA: Choreography — purchase-service pita tour-service o dostupnosti ture preko RabbitMQ
+    @SuppressWarnings("unchecked")
+    private boolean checkTourAvailabilityViaRabbitMQ(Long tourId) {
         try {
-            String url = tourServiceBaseUrl + "/tours/" + tourId + "/availability";
-            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                Object available = response.getBody().get("available");
-                return Boolean.TRUE.equals(available);
-            }
-            return false;
+            Map<String, Object> request = Map.of("tourId", tourId);
+            Map<String, Object> response = (Map<String, Object>) rabbitTemplate
+                    .convertSendAndReceive(RabbitMQConfig.TOUR_AVAILABILITY_QUEUE, request);
+            if (response == null) return false;
+            return Boolean.TRUE.equals(response.get("available"));
         } catch (Exception e) {
             return false;
         }
