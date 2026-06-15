@@ -1,6 +1,7 @@
 using AuthService.DTOs;
 using AuthService.Infrastructure;
 using AuthService.Models;
+using AuthService.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -19,17 +20,15 @@ public class AuthController : ControllerBase
     private readonly IConfiguration _config;
     private readonly string _jwtKey;
     private readonly string _jwtIssuer;
-    private readonly IHttpClientFactory _httpClientFactory;
-    private readonly string _stakeholdersUrl;
+    private readonly SagaMessagingService _saga;
 
-    public AuthController(AuthDbContext db, IConfiguration config, IHttpClientFactory httpClientFactory)
+    public AuthController(AuthDbContext db, IConfiguration config, SagaMessagingService saga)
     {
-        _db = db;
-        _config = config;
-        _jwtKey              = Environment.GetEnvironmentVariable("JWT_KEY")                ?? config["Jwt:Key"]    ?? "change-me-in-production-min32chars!!";
-        _jwtIssuer           = Environment.GetEnvironmentVariable("JWT_ISSUER")             ?? config["Jwt:Issuer"] ?? "AuthService";
-        _stakeholdersUrl     = Environment.GetEnvironmentVariable("STAKEHOLDERS_SERVICE_URL") ?? "http://stakeholders-service:80";
-        _httpClientFactory   = httpClientFactory;
+        _db        = db;
+        _config    = config;
+        _jwtKey    = Environment.GetEnvironmentVariable("JWT_KEY")    ?? config["Jwt:Key"]    ?? "change-me-in-production-min32chars!!";
+        _jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? config["Jwt:Issuer"] ?? "AuthService";
+        _saga      = saga;
     }
 
     // POST /auth/register
@@ -70,17 +69,13 @@ public class AuthController : ControllerBase
         _db.Users.Add(user);
         await _db.SaveChangesAsync();
 
-        // SAGA korak 2: kreiraj profil u stakeholders-service
+        // SAGA korak 2: kreiraj profil u stakeholders-service preko RabbitMQ
         try
         {
-            var client = _httpClientFactory.CreateClient();
-            var response = await client.PostAsJsonAsync(
-                $"{_stakeholdersUrl}/stakeholders/profile/init",
-                new { UserId = user.Id, Username = user.Username, Role = user.Role }
-            );
+            var profileCreated = await _saga.InitProfileAsync(user.Id, user.Username, user.Role);
 
-            if (!response.IsSuccessStatusCode)
-                throw new Exception($"Stakeholders service returned {response.StatusCode}");
+            if (!profileCreated)
+                throw new Exception("Stakeholders service odbio kreiranje profila");
         }
         catch (Exception ex)
         {
