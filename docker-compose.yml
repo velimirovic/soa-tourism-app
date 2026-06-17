@@ -318,7 +318,22 @@ services:
     ports:
       - "4200:80"
 
-  # ── Log aggregation ─────────────────────────────────────────────
+  # -- Prometheus --------------------------------------------------
+  prometheus:
+    image: prom/prometheus:latest
+    restart: always
+    networks:
+      - application
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=7d'
+
+  # -- Log aggregation ---------------------------------------------
   loki:
     image: grafana/loki:2.9.4
     restart: on-failure
@@ -344,6 +359,7 @@ services:
     depends_on:
       - loki
 
+  # -- Grafana -----------------------------------------------------
   grafana:
     image: grafana/grafana:10.4.2
     restart: on-failure
@@ -352,13 +368,46 @@ services:
     ports:
       - "3000:3000"
     environment:
+      GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
       GF_USERS_ALLOW_SIGN_UP: "false"
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
     depends_on:
+      - prometheus
       - loki
+
+  # -- node_exporter (HOST metrike: CPU, RAM, disk, mreza) ---------
+  node-exporter:
+    image: prom/node-exporter:latest
+    restart: always
+    networks:
+      - application
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)(|/)'
+
+  # -- cAdvisor (kontejner metrike: CPU, RAM, disk, mreza) ---------
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.0
+    restart: always
+    networks:
+      - application
+    ports:
+      - "8090:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command:
+      - '--docker_only=true'
+      - '--disable_metrics=disk,diskIO,hugetlb,percpu,sched,process'
 
 networks:
   application:
@@ -371,6 +420,7 @@ volumes:
   blog-db-data:
   neo4j-data:
   purchase-db-data:
+  prometheus-data:
   loki-data:
   grafana-data:
   rabbitmq-data:
