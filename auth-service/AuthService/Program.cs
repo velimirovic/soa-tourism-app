@@ -1,4 +1,5 @@
 using AuthService.Infrastructure;
+using AuthService.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -47,6 +48,9 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod()
               .AllowAnyHeader());
 });
+
+// ── SAGA Messaging (RabbitMQ) ─────────────────────────────────────────────────
+builder.Services.AddSingleton<SagaMessagingService>();
 
 // ── OpenAPI / Controllers ─────────────────────────────────────────────────────
 builder.Services.AddOpenApi();

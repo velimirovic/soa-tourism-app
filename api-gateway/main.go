@@ -2,14 +2,24 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+
+	blogpb "api-gateway/proto/blog"
+	followerspb "api-gateway/proto/followers"
+	positionpb "api-gateway/proto/position"
+	reviewpb "api-gateway/proto/review"
 )
 
 var jwtKey []byte
@@ -100,6 +110,232 @@ func newReverseProxy(target string) http.Handler {
 	return proxy
 }
 
+// ── tourHandler: POST /api/tours/{id}/reviews → gRPC, ostalo → HTTP proxy ──
+
+type tourHandler struct {
+	proxy        http.Handler
+	reviewClient reviewpb.ReviewServiceClient
+}
+
+func (h *tourHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	path := strings.TrimPrefix(r.URL.Path, "/api/tours/")
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+
+	if r.Method == http.MethodPost && len(parts) == 2 && parts[1] == "reviews" {
+		tourID, err := strconv.ParseInt(parts[0], 10, 64)
+		if err != nil {
+			http.Error(w, `{"error":"Invalid tour ID"}`, http.StatusBadRequest)
+			return
+		}
+		h.handleCreateReview(w, r, tourID)
+		return
+	}
+
+	h.proxy.ServeHTTP(w, r)
+}
+
+func (h *tourHandler) handleCreateReview(w http.ResponseWriter, r *http.Request, tourID int64) {
+	touristID, err := extractUserID(r.Header.Get("Authorization"))
+	if err != nil {
+		http.Error(w, `{"error":"Unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+
+	var body struct {
+		Rating      int      `json:"rating"`
+		Comment     string   `json:"comment"`
+		TouristName string   `json:"touristName"`
+		VisitDate   string   `json:"visitDate"`
+		Images      []string `json:"images"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, `{"error":"Invalid request body"}`, http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := h.reviewClient.CreateReview(ctx, &reviewpb.CreateReviewRequest{
+		TourId:      tourID,
+		TouristId:   touristID,
+		Rating:      int32(body.Rating),
+		Comment:     body.Comment,
+		TouristName: body.TouristName,
+		VisitDate:   body.VisitDate,
+		Images:      body.Images,
+	})
+	if err != nil {
+		log.Printf("gRPC CreateReview error: %v", err)
+		http.Error(w, `{"error":"Service unavailable"}`, http.StatusBadGateway)
+		return
+	}
+
+	result := map[string]interface{}{
+		"id":          resp.Id,
+		"tourId":      resp.TourId,
+		"touristId":   resp.TouristId,
+		"rating":      resp.Rating,
+		"comment":     resp.Comment,
+		"touristName": resp.TouristName,
+		"visitDate":   resp.VisitDate,
+		"commentDate": resp.CommentDate,
+		"images":      resp.Images,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(result)
+}
+
+// ── stakeholdersHandler: PUT /api/stakeholders/profile/{id}/position → gRPC ──
+
+type stakeholdersHandler struct {
+	proxy          http.Handler
+	positionClient positionpb.PositionServiceClient
+}
+
+func (h *stakeholdersHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	path := strings.TrimPrefix(r.URL.Path, "/api/stakeholders/profile/")
+	if r.Method == http.MethodPut && strings.HasSuffix(path, "/position") {
+		userIDStr := strings.TrimSuffix(path, "/position")
+		userID, err := strconv.ParseInt(userIDStr, 10, 64)
+		if err != nil {
+			http.Error(w, `{"error":"Invalid user ID"}`, http.StatusBadRequest)
+			return
+		}
+		h.handleUpdatePosition(w, r, userID)
+		return
+	}
+
+	h.proxy.ServeHTTP(w, r)
+}
+
+func (h *stakeholdersHandler) handleUpdatePosition(w http.ResponseWriter, r *http.Request, userID int64) {
+	var body struct {
+		Latitude  float64 `json:"latitude"`
+		Longitude float64 `json:"longitude"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, `{"error":"Invalid request body"}`, http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := h.positionClient.UpdatePosition(ctx, &positionpb.UpdatePositionRequest{
+		UserId:    userID,
+		Latitude:  body.Latitude,
+		Longitude: body.Longitude,
+	})
+	if err != nil {
+		log.Printf("gRPC UpdatePosition error: %v", err)
+		http.Error(w, `{"error":"Service unavailable"}`, http.StatusBadGateway)
+		return
+	}
+
+	result := map[string]interface{}{
+		"userId":    resp.UserId,
+		"latitude":  resp.Latitude,
+		"longitude": resp.Longitude,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(result)
+}
+
+// ── followersHandler: POST /api/followers/follow → gRPC Follow
+//                     GET  /api/followers/is-following/{id} → gRPC IsFollowing ──
+
+type followersHandler struct {
+	proxy          http.Handler
+	followersClient followerspb.FollowersServiceClient
+}
+
+func (h *followersHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	path := strings.TrimPrefix(r.URL.Path, "/api/followers")
+
+	if r.Method == http.MethodPost && path == "/follow" {
+		h.handleFollow(w, r)
+		return
+	}
+
+	if r.Method == http.MethodGet && strings.HasPrefix(path, "/is-following/") {
+		theirID := strings.TrimPrefix(path, "/is-following/")
+		if theirID != "" {
+			h.handleIsFollowing(w, r, theirID)
+			return
+		}
+	}
+
+	h.proxy.ServeHTTP(w, r)
+}
+
+func (h *followersHandler) handleFollow(w http.ResponseWriter, r *http.Request) {
+	userClaims, err := extractUserClaims(r.Header.Get("Authorization"))
+	if err != nil {
+		http.Error(w, `{"error":"Unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+
+	var body struct {
+		FollowingID       string `json:"followingId"`
+		FollowingUsername string `json:"followingUsername"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.FollowingID == "" {
+		http.Error(w, `{"error":"followingId required"}`, http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := h.followersClient.Follow(ctx, &followerspb.FollowRequest{
+		FollowerId:       userClaims.ID,
+		FollowerUsername: userClaims.Username,
+		FollowingId:      body.FollowingID,
+		FollowingUsername: body.FollowingUsername,
+	})
+	if err != nil {
+		log.Printf("gRPC Follow error: %v", err)
+		writeGrpcError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": resp.Message})
+}
+
+func (h *followersHandler) handleIsFollowing(w http.ResponseWriter, r *http.Request, theirID string) {
+	userClaims, err := extractUserClaims(r.Header.Get("Authorization"))
+	if err != nil {
+		http.Error(w, `{"error":"Unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := h.followersClient.IsFollowing(ctx, &followerspb.IsFollowingRequest{
+		FollowerId:  userClaims.ID,
+		FollowingId: theirID,
+	})
+	if err != nil {
+		log.Printf("gRPC IsFollowing error: %v", err)
+		writeGrpcError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]bool{"isFollowing": resp.IsFollowing})
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 func main() {
 	jwtKeyStr := os.Getenv("JWT_KEY")
 	if jwtKeyStr == "" {
@@ -135,22 +371,73 @@ func main() {
 	if tourServiceGrpcURL == "" {
 		tourServiceGrpcURL = "tour-service:9090"
 	}
+	stakeholdersGrpcURL := os.Getenv("STAKEHOLDERS_SERVICE_GRPC_URL")
+	if stakeholdersGrpcURL == "" {
+		stakeholdersGrpcURL = "stakeholders-service:5001"
+	}
+	followersGrpcURL := os.Getenv("FOLLOWERS_SERVICE_GRPC_URL")
+	if followersGrpcURL == "" {
+		followersGrpcURL = "followers-service:9091"
+	}
+	blogServiceGrpcURL := os.Getenv("BLOG_SERVICE_GRPC_URL")
+	if blogServiceGrpcURL == "" {
+		blogServiceGrpcURL = "blog-service:50051"
+	}
 
-	// ── gRPC-Gateway: HTTP/JSON → gRPC transcoding ──────────────────────────────
-	// Follows the grpc-gateway pattern: gateway translates REST requests to gRPC
-	// calls on the tour-service using the routes defined in tour_execution.proto.
+	// gRPC-Gateway za tour execution (StartTour, CheckPosition)
 	ctx := context.Background()
 	gwMux, err := newGatewayMux(ctx, tourServiceGrpcURL)
 	if err != nil {
 		log.Fatalf("Failed to create gRPC gateway: %v", err)
 	}
 
+	// gRPC konekcija ka tour-service (za reviews)
+	reviewConn, err := grpc.NewClient(tourServiceGrpcURL,
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("Nije moguće konektovati se na tour-service gRPC: %v", err)
+	}
+	defer reviewConn.Close()
+	reviewClient := reviewpb.NewReviewServiceClient(reviewConn)
+
+	// gRPC konekcija ka blog-service (CreateBlog, GetBlogById)
+	blogConn, err := grpc.NewClient(blogServiceGrpcURL,
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("Nije moguće konektovati se na blog-service gRPC: %v", err)
+	}
+	defer blogConn.Close()
+	blogClient := blogpb.NewBlogServiceClient(blogConn)
+
+	// gRPC konekcija ka stakeholders-service (za position)
+	positionConn, err := grpc.NewClient(stakeholdersGrpcURL,
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("Nije moguće konektovati se na stakeholders-service gRPC: %v", err)
+	}
+	defer positionConn.Close()
+	positionClient := positionpb.NewPositionServiceClient(positionConn)
+
+	// gRPC konekcija ka followers-service (za follow i isFollowing)
+	followersConn, err := grpc.NewClient(followersGrpcURL,
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("Nije moguće konektovati se na followers-service gRPC: %v", err)
+	}
+	defer followersConn.Close()
+	followersClient := followerspb.NewFollowersServiceClient(followersConn)
+
 	mux := http.NewServeMux()
 	tourProxy := newReverseProxy(tourServiceURL)
 
-	// ── gRPC-backed routes ───────────────────────────────────────────────────────
+	mux.Handle("/api/auth", newReverseProxy(authServiceURL))
+	mux.Handle("/api/auth/", newReverseProxy(authServiceURL))
+	// POST /api/blogs → gRPC CreateBlog, GET /api/blogs/:id → gRPC GetBlogById, ostalo → HTTP proxy
+	blogProxy := newReverseProxy(blogServiceURL)
+	mux.Handle("/api/blogs", &blogHandler{proxy: blogProxy, blogClient: blogClient})
+	mux.Handle("/api/blogs/", &blogHandler{proxy: blogProxy, blogClient: blogClient})
+
 	// POST /api/tours/executions → gRPC StartTour via gateway
-	// All other methods → REST proxy (e.g. GET to fetch active execution)
 	mux.HandleFunc("/api/tours/executions", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			r.URL.Path = strings.TrimPrefix(r.URL.Path, "/api")
@@ -160,8 +447,7 @@ func main() {
 		}
 	})
 
-	// POST /api/tours/executions/{id}/check-position → gRPC CheckPosition via gateway
-	// All other paths/methods → REST proxy (complete, abandon, get by id, etc.)
+	// POST /api/tours/executions/{id}/check-position → gRPC CheckPosition
 	mux.HandleFunc("/api/tours/executions/", func(w http.ResponseWriter, r *http.Request) {
 		path := strings.TrimPrefix(r.URL.Path, "/api/tours/executions/")
 		parts := strings.Split(strings.Trim(path, "/"), "/")
@@ -173,17 +459,21 @@ func main() {
 		}
 	})
 
-	// ── REST proxy routes ────────────────────────────────────────────────────────
-	mux.Handle("/api/auth", newReverseProxy(authServiceURL))
-	mux.Handle("/api/auth/", newReverseProxy(authServiceURL))
-	mux.Handle("/api/blogs", newReverseProxy(blogServiceURL))
-	mux.Handle("/api/blogs/", newReverseProxy(blogServiceURL))
-	mux.Handle("/api/tours", tourProxy)
-	mux.Handle("/api/tours/", tourProxy)
-	mux.Handle("/api/stakeholders", newReverseProxy(stakeholdersServiceURL))
-	mux.Handle("/api/stakeholders/", newReverseProxy(stakeholdersServiceURL))
-	mux.Handle("/api/followers", newReverseProxy(followersServiceURL))
-	mux.Handle("/api/followers/", newReverseProxy(followersServiceURL))
+	// POST /api/tours/{id}/reviews → gRPC, ostalo → HTTP proxy
+	mux.Handle("/api/tours", &tourHandler{proxy: tourProxy, reviewClient: reviewClient})
+	mux.Handle("/api/tours/", &tourHandler{proxy: tourProxy, reviewClient: reviewClient})
+
+	// PUT /api/stakeholders/profile/{id}/position → gRPC, ostalo → HTTP proxy
+	stakeholdersProxy := newReverseProxy(stakeholdersServiceURL)
+	mux.Handle("/api/stakeholders", &stakeholdersHandler{proxy: stakeholdersProxy, positionClient: positionClient})
+	mux.Handle("/api/stakeholders/", &stakeholdersHandler{proxy: stakeholdersProxy, positionClient: positionClient})
+
+	// POST /api/followers/follow → gRPC Follow
+	// GET  /api/followers/is-following/{id} → gRPC IsFollowing
+	// ostalo → HTTP proxy
+	followersProxy := newReverseProxy(followersServiceURL)
+	mux.Handle("/api/followers", &followersHandler{proxy: followersProxy, followersClient: followersClient})
+	mux.Handle("/api/followers/", &followersHandler{proxy: followersProxy, followersClient: followersClient})
 	mux.Handle("/api/purchases", newReverseProxy(purchaseServiceURL))
 	mux.Handle("/api/purchases/", newReverseProxy(purchaseServiceURL))
 
@@ -201,7 +491,11 @@ func main() {
 	}
 
 	log.Printf("API Gateway pokrenut na portu :%s", port)
-	log.Printf("  gRPC Gateway → tour-service: %s", tourServiceGrpcURL)
+	log.Printf("  /api/tours/executions → gRPC gateway (%s)", tourServiceGrpcURL)
+	log.Printf("  /api/tours/{id}/reviews → gRPC (%s)", tourServiceGrpcURL)
+	log.Printf("  /api/stakeholders/profile/{id}/position → gRPC (%s)", stakeholdersGrpcURL)
+	log.Printf("  /api/followers/follow → gRPC (%s)", followersGrpcURL)
+	log.Printf("  /api/followers/is-following/{id} → gRPC (%s)", followersGrpcURL)
 
 	if err := http.ListenAndServe(":"+port, handler); err != nil {
 		log.Fatalf("Gateway se ugasio sa greškom: %v", err)

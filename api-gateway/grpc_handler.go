@@ -12,6 +12,32 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+type UserClaims struct {
+	ID       string
+	Username string
+}
+
+// extractUserClaims parses the JWT and returns the user's ID (sub) and username as strings.
+func extractUserClaims(authHeader string) (UserClaims, error) {
+	tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, jwt.ErrSignatureInvalid
+		}
+		return jwtKey, nil
+	})
+	if err != nil || !token.Valid {
+		return UserClaims{}, fmt.Errorf("invalid token")
+	}
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return UserClaims{}, fmt.Errorf("invalid claims")
+	}
+	id := fmt.Sprintf("%v", claims["sub"])
+	username := fmt.Sprintf("%v", claims["username"])
+	return UserClaims{ID: id, Username: username}, nil
+}
+
 // extractUserID parses the JWT and returns the "sub" claim as int64.
 func extractUserID(authHeader string) (int64, error) {
 	tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
@@ -30,6 +56,44 @@ func extractUserID(authHeader string) (int64, error) {
 	}
 	sub := fmt.Sprintf("%v", claims["sub"])
 	return strconv.ParseInt(sub, 10, 64)
+}
+
+// extractUserIDString returns the "sub" claim as a string (used for blog-service where authorId is a string).
+func extractUserIDString(authHeader string) (string, error) {
+	tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, jwt.ErrSignatureInvalid
+		}
+		return jwtKey, nil
+	})
+	if err != nil || !token.Valid {
+		return "", fmt.Errorf("invalid token")
+	}
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return "", fmt.Errorf("invalid claims")
+	}
+	return fmt.Sprintf("%v", claims["sub"]), nil
+}
+
+// extractUsername returns the "username" claim from the JWT.
+func extractUsername(authHeader string) (string, error) {
+	tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
+	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, jwt.ErrSignatureInvalid
+		}
+		return jwtKey, nil
+	})
+	if err != nil || !token.Valid {
+		return "", fmt.Errorf("invalid token")
+	}
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return "", fmt.Errorf("invalid claims")
+	}
+	return fmt.Sprintf("%v", claims["username"]), nil
 }
 
 func writeGrpcError(w http.ResponseWriter, err error) {

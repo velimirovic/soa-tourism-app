@@ -1,11 +1,20 @@
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 using StakeholdersService.Infrastructure;
+using StakeholdersService.Grpc;
+using StakeholdersService.Services;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(80,   o => o.Protocols = HttpProtocols.Http1);
+    options.ListenAnyIP(5001, o => o.Protocols = HttpProtocols.Http2);
+});
 
 var dbHost     = Environment.GetEnvironmentVariable("DATABASE_HOST")     ?? "localhost";
 var dbPort     = Environment.GetEnvironmentVariable("DATABASE_PORT")     ?? "5432";
@@ -55,6 +64,12 @@ builder.Services.AddCors(options =>
               .AllowAnyHeader());
 });
 
+// ── SAGA Consumer (RabbitMQ) ──────────────────────────────────────────────────
+builder.Services.AddHostedService<ProfileSagaConsumer>();
+
+// ── gRPC ─────────────────────────────────────────────────────────────────────
+builder.Services.AddGrpc();
+
 // ── OpenAPI / Controllers ─────────────────────────────────────────────────────
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
@@ -75,5 +90,6 @@ app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapGrpcService<PositionGrpcService>();
 
 app.Run();

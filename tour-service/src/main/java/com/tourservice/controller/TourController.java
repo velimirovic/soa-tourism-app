@@ -38,10 +38,15 @@ import com.tourservice.repository.TourRepository;
 import com.tourservice.util.JwtUtil;
 
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 @RestController
 @RequestMapping("/tours")
 public class TourController {
+
+    private static final Logger log = LoggerFactory.getLogger(TourController.class);
 
     @Value("${purchase.service.base-url:http://purchase-service:8080}")
     private String purchaseServiceBaseUrl;
@@ -76,6 +81,7 @@ public class TourController {
 
         Long authorId = jwtUtil.extractUserId(authHeader);
         if (authorId == null) {
+            log.warn("Unauthorized tour creation attempt");
             return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
         }
 
@@ -90,6 +96,11 @@ public class TourController {
         tour.setCreatedAt(LocalDateTime.now());
 
         Tour saved = tourRepository.save(tour);
+        MDC.put("tourId", String.valueOf(saved.getId()));
+        MDC.put("userId", String.valueOf(authorId));
+        MDC.put("action", "TOUR_CREATED");
+        log.info("Tour created: name={}, difficulty={}", saved.getName(), saved.getDifficulty());
+        MDC.clear();
         return ResponseEntity.status(201).body(TourResponse.from(saved));
     }
 
@@ -238,6 +249,12 @@ public class TourController {
             tour.setPublishedAt(LocalDateTime.now());
             Tour saved = tourRepository.save(tour);
 
+            MDC.put("tourId", String.valueOf(saved.getId()));
+            MDC.put("userId", String.valueOf(authorId));
+            MDC.put("action", "TOUR_PUBLISHED");
+            log.info("Tour published: name={}, keyPoints={}, durations={}", saved.getName(), kps.size(), durations.size());
+            MDC.clear();
+
             List<TourDurationResponse> durationResponses = durations.stream()
                     .map(TourDurationResponse::from).collect(Collectors.toList());
             KeyPointResponse firstKp = KeyPointResponse.from(kps.get(0));
@@ -266,7 +283,13 @@ public class TourController {
             }
             tour.setStatus("ARCHIVED");
             tour.setArchivedAt(LocalDateTime.now());
-            return ResponseEntity.ok((Object) TourResponse.from(tourRepository.save(tour)));
+            Tour saved = tourRepository.save(tour);
+            MDC.put("tourId", String.valueOf(saved.getId()));
+            MDC.put("userId", String.valueOf(authorId));
+            MDC.put("action", "TOUR_ARCHIVED");
+            log.info("Tour archived: name={}", saved.getName());
+            MDC.clear();
+            return ResponseEntity.ok((Object) TourResponse.from(saved));
         }).orElse(ResponseEntity.status(404).body(Map.of("error", "Tour not found")));
     }
 
@@ -523,6 +546,11 @@ public class TourController {
         review.setImages(req.getImages() != null ? req.getImages() : List.of());
 
         Review saved = reviewRepository.save(review);
+        MDC.put("tourId", String.valueOf(tourId));
+        MDC.put("userId", String.valueOf(touristId));
+        MDC.put("action", "REVIEW_ADDED");
+        log.info("Review added: rating={}", saved.getRating());
+        MDC.clear();
         return ResponseEntity.status(201).body(ReviewResponse.from(saved));
     }
 
@@ -543,6 +571,19 @@ public class TourController {
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok(reviews);
+    }
+
+    // GET /tours/{tourId}/availability — SAGA Choreography: purchase-service poziva ovaj endpoint
+    @GetMapping("/{tourId}/availability")
+    public ResponseEntity<?> checkAvailability(@PathVariable Long tourId) {
+        return tourRepository.findById(tourId)
+                .map(tour -> {
+                    boolean available = "PUBLISHED".equals(tour.getStatus());
+                    String reason = available ? "Tour is available for purchase"
+                                              : "Tour is not published (status: " + tour.getStatus() + ")";
+                    return ResponseEntity.ok(Map.of("available", available, "reason", reason));
+                })
+                .orElse(ResponseEntity.ok(Map.of("available", false, "reason", "Tour not found")));
     }
 
     // ─── Helperi ───────────────────────────────────────────────────────────────

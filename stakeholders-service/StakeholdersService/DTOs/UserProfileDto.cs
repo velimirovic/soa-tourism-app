@@ -23,3 +23,9 @@ public record UpdatePositionDto(
     double Latitude,
     double Longitude
 );
+
+public record InitProfileDto(
+    long UserId,
+    string Username,
+    string Role
+);

@@ -1,0 +1,29 @@
+syntax = "proto3";
+package review;
+option go_package = "api-gateway/proto/review;review";
+
+service ReviewService {
+  rpc CreateReview(CreateReviewRequest) returns (ReviewResponse);
+}
+
+message CreateReviewRequest {
+  int64 tour_id = 1;
+  int64 tourist_id = 2;
+  int32 rating = 3;
+  string comment = 4;
+  string tourist_name = 5;
+  string visit_date = 6;
+  repeated string images = 7;
+}
+
+message ReviewResponse {
+  int64 id = 1;
+  int64 tour_id = 2;
+  int64 tourist_id = 3;
+  int32 rating = 4;
+  string comment = 5;
+  string tourist_name = 6;
+  string visit_date = 7;
+  string comment_date = 8;
+  repeated string images = 9;
+}

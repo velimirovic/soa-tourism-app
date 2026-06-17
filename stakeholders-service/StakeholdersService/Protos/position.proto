@@ -1,0 +1,19 @@
+syntax = "proto3";
+package position;
+option csharp_namespace = "StakeholdersService.Grpc";
+
+service PositionService {
+  rpc UpdatePosition(UpdatePositionRequest) returns (UpdatePositionResponse);
+}
+
+message UpdatePositionRequest {
+  int64 user_id = 1;
+  double latitude = 2;
+  double longitude = 3;
+}
+
+message UpdatePositionResponse {
+  int64 user_id = 1;
+  double latitude = 2;
+  double longitude = 3;
+}

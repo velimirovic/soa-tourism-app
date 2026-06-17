@@ -10,17 +10,11 @@ namespace StakeholdersService.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<double>(
-                name: "CurrentLatitude",
-                table: "UserProfiles",
-                type: "double precision",
-                nullable: true);
-
-            migrationBuilder.AddColumn<double>(
-                name: "CurrentLongitude",
-                table: "UserProfiles",
-                type: "double precision",
-                nullable: true);
+            migrationBuilder.Sql(@"
+                ALTER TABLE ""UserProfiles""
+                ADD COLUMN IF NOT EXISTS ""CurrentLatitude"" double precision,
+                ADD COLUMN IF NOT EXISTS ""CurrentLongitude"" double precision;
+            ");
         }
 
         /// <inheritdoc />

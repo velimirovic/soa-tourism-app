@@ -14,7 +14,8 @@ import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import jakarta.annotation.PreDestroy;
 
-@Component
+// Disabled: TourExecutionGrpcService is now managed by net.devh grpc-server-spring-boot-starter
+// @Component
 public class GrpcServerRunner {
 
     private static final Logger log = LoggerFactory.getLogger(GrpcServerRunner.class);

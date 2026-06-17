@@ -1,5 +1,39 @@
 services:
 
+  # ── Distributed Tracing ─────────────────────────────────────────
+  zipkin:
+    image: openzipkin/zipkin
+    restart: always
+    networks:
+      - application
+    ports:
+      - "9411:9411"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9411/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  # ── Message Bus ─────────────────────────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3-management
+    restart: always
+    networks:
+      - application
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
   # ── API Gateway (Go) ────────────────────────────────────────────
   api-gateway:
     build:
@@ -20,6 +54,9 @@ services:
       FOLLOWERS_SERVICE_URL: http://followers-service:8084
       PURCHASE_SERVICE_URL: http://purchase-service:8080
       TOUR_SERVICE_GRPC_URL: tour-service:9090
+      STAKEHOLDERS_SERVICE_GRPC_URL: stakeholders-service:5001
+      FOLLOWERS_SERVICE_GRPC_URL: followers-service:9091
+      BLOG_SERVICE_GRPC_URL: blog-service:50051
     depends_on:
       - auth-service
       - blog-service
@@ -37,6 +74,7 @@ services:
       - application
     ports:
       - "8081:80"
+      - "5001:5001"
     environment:
       DATABASE_HOST: stakeholders-db
       DATABASE_PORT: 5432
@@ -46,9 +84,14 @@ services:
       JWT_KEY: change-me-in-production-min32chars!!
       JWT_ISSUER: AuthService
       AUTH_SERVICE_URL: http://auth-service:80
+      RABBITMQ_HOST: rabbitmq
     depends_on:
-      - stakeholders-db
-      - auth-service
+      stakeholders-db:
+        condition: service_started
+      auth-service:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
 
   stakeholders-db:
     image: postgres:16
@@ -81,8 +124,12 @@ services:
       DATABASE_NAME: auth
       JWT_KEY: change-me-in-production-min32chars!!
       JWT_ISSUER: AuthService
+      RABBITMQ_HOST: rabbitmq
     depends_on:
-      - auth-db
+      auth-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
 
   auth-db:
     image: postgres:16
@@ -97,6 +144,11 @@ services:
       - "5435:5432"
     volumes:
       - auth-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   tour-service:
     build:
@@ -115,8 +167,21 @@ services:
       DATABASE_NAME: tours
       JWT_KEY: change-me-in-production-min32chars!!
       PURCHASE_SERVICE_URL: http://purchase-service:8080
+      RABBITMQ_HOST: rabbitmq
+      ZIPKIN_URL: http://zipkin:9411
     depends_on:
-      - tour-db
+      tour-db:
+        condition: service_started
+      loki:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      zipkin:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        tag: "tour-service"
 
   tour-db:
     image: postgres:16
@@ -141,8 +206,10 @@ services:
       - application
     ports:
       - "3001:3001"
+      - "50051:50051"
     environment:
       PORT: 3001
+      GRPC_PORT: 50051
       MONGO_URI: mongodb://blog-db:27017/blog
       JWT_SECRET: change-me-in-production-min32chars!!
       FOLLOWERS_SERVICE_URL: http://followers-service:8084
@@ -170,8 +237,10 @@ services:
       - application
     ports:
       - "8084:8084"
+      - "9091:9091"
     environment:
       PORT: 8084
+      GRPC_PORT: 9091
       JWT_SECRET: change-me-in-production-min32chars!!
       NEO4J_URI: bolt://neo4j:7687
       NEO4J_USERNAME: neo4j
@@ -213,8 +282,17 @@ services:
       DATABASE_USER: postgres
       DATABASE_PASSWORD: super
       DATABASE_NAME: purchases
+      RABBITMQ_HOST: rabbitmq
+      ZIPKIN_URL: http://zipkin:9411
     depends_on:
-      - purchase-db
+      purchase-db:
+        condition: service_started
+      tour-service:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      zipkin:
+        condition: service_healthy
 
   purchase-db:
     image: postgres:16
@@ -240,7 +318,7 @@ services:
     ports:
       - "4200:80"
 
-  # ── Prometheus ──────────────────────────────────────────────────
+  # -- Prometheus --------------------------------------------------
   prometheus:
     image: prom/prometheus:latest
     restart: always
@@ -255,23 +333,52 @@ services:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.retention.time=7d'
 
-  # ── Grafana ─────────────────────────────────────────────────────
+  # -- Log aggregation ---------------------------------------------
+  loki:
+    image: grafana/loki:2.9.4
+    restart: on-failure
+    networks:
+      - application
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/loki-config.yml
+    volumes:
+      - loki-data:/loki
+      - ./loki-config.yml:/etc/loki/loki-config.yml
+
+  promtail:
+    image: grafana/promtail:2.9.4
+    restart: on-failure
+    networks:
+      - application
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./promtail-config.yml:/etc/promtail/config.yml
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      - loki
+
+  # -- Grafana -----------------------------------------------------
   grafana:
-    image: grafana/grafana:latest
-    restart: always
+    image: grafana/grafana:10.4.2
+    restart: on-failure
     networks:
       - application
     ports:
       - "3000:3000"
-    volumes:
-      - grafana-data:/var/lib/grafana
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
     depends_on:
       - prometheus
+      - loki
 
-  # ── node_exporter (HOST metrike: CPU, RAM, disk, mreža) ─────────
+  # -- node_exporter (HOST metrike: CPU, RAM, disk, mreza) ---------
   node-exporter:
     image: prom/node-exporter:latest
     restart: always
@@ -286,9 +393,9 @@ services:
     command:
       - '--path.procfs=/host/proc'
       - '--path.sysfs=/host/sys'
-      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)(|/)'
 
-  # ── cAdvisor (kontejner metrike: CPU, RAM, disk, mreža) ─────────
+  # -- cAdvisor (kontejner metrike: CPU, RAM, disk, mreza) ---------
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.47.0
     restart: always
@@ -314,4 +421,6 @@ volumes:
   neo4j-data:
   purchase-db-data:
   prometheus-data:
+  loki-data:
   grafana-data:
+  rabbitmq-data:

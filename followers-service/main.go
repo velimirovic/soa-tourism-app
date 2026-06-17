@@ -370,6 +370,8 @@ func main() {
 	}
 	log.Println("Connected to Neo4j")
 
+	go startGrpcServer()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/followers/follow", authMiddleware(followHandler))
 	mux.HandleFunc("/followers/unfollow/", authMiddleware(unfollowHandler))

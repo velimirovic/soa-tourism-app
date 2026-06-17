@@ -1,6 +1,7 @@
 using AuthService.DTOs;
 using AuthService.Infrastructure;
 using AuthService.Models;
+using AuthService.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -19,13 +20,15 @@ public class AuthController : ControllerBase
     private readonly IConfiguration _config;
     private readonly string _jwtKey;
     private readonly string _jwtIssuer;
+    private readonly SagaMessagingService _saga;
 
-    public AuthController(AuthDbContext db, IConfiguration config)
+    public AuthController(AuthDbContext db, IConfiguration config, SagaMessagingService saga)
     {
-        _db = db;
-        _config = config;
+        _db        = db;
+        _config    = config;
         _jwtKey    = Environment.GetEnvironmentVariable("JWT_KEY")    ?? config["Jwt:Key"]    ?? "change-me-in-production-min32chars!!";
         _jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? config["Jwt:Issuer"] ?? "AuthService";
+        _saga      = saga;
     }
 
     // POST /auth/register
@@ -62,8 +65,30 @@ public class AuthController : ControllerBase
             CreatedAt    = DateTime.UtcNow
         };
 
+        // SAGA korak 1: sačuvaj korisnika u auth-service bazi
         _db.Users.Add(user);
         await _db.SaveChangesAsync();
+
+        // SAGA korak 2: kreiraj profil u stakeholders-service preko RabbitMQ
+        try
+        {
+            var profileCreated = await _saga.InitProfileAsync(user.Id, user.Username, user.Role);
+
+            if (!profileCreated)
+                throw new Exception("Stakeholders service odbio kreiranje profila");
+        }
+        catch (Exception ex)
+        {
+            // SAGA kompenzacija: obriši korisnika iz auth baze
+            _db.Users.Remove(user);
+            await _db.SaveChangesAsync();
+
+            return StatusCode(503, new
+            {
+                error  = "Registracija nije uspela: profil korisnika nije mogao biti kreiran.",
+                detail = ex.Message
+            });
+        }
 
         var token = GenerateJwt(user);
 
